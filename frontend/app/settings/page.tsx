@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { useAuth } from '../../components/AuthProvider'
+import AISettings from './ai-settings'
 
 export default function SettingsPage() {
   const { user, loading } = useAuth()
@@ -371,70 +372,8 @@ export default function SettingsPage() {
                 <h2 className="text-2xl font-bold mb-6">AI Settings</h2>
                 
                 <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Meeting Notes</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-300 mb-1">
-                          Default Meeting Note Template
-                        </label>
-                        <select
-                          className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        >
-                          <option value="standard">Standard Template</option>
-                          <option value="detailed">Detailed Template</option>
-                          <option value="concise">Concise Template</option>
-                          <option value="custom">Custom Template</option>
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-300 mb-1">
-                          Meeting Note Detail Level
-                        </label>
-                        <div className="w-full">
-                          <input
-                            type="range"
-                            min="1"
-                            max="5"
-                            defaultValue="3"
-                            className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer"
-                          />
-                          <div className="flex justify-between text-xs text-neutral-400 mt-1">
-                            <span>Concise</span>
-                            <span>Balanced</span>
-                            <span>Detailed</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between p-3 bg-neutral-800/50 rounded-lg">
-                        <div>
-                          <h4 className="font-medium">Automatically Generate Meeting Notes</h4>
-                          <p className="text-sm text-neutral-400">
-                            Generate meeting notes automatically after transcription
-                          </p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" className="sr-only peer" defaultChecked />
-                          <div className="w-11 h-6 bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center justify-between p-3 bg-neutral-800/50 rounded-lg">
-                        <div>
-                          <h4 className="font-medium">Sync to Knowledge Base</h4>
-                          <p className="text-sm text-neutral-400">
-                            Automatically sync meeting notes to knowledge base
-                          </p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" className="sr-only peer" defaultChecked />
-                          <div className="w-11 h-6 bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
+                  {/* AI Settings Component */}
+                  <AISettings />
                   
                   <div className="border-t border-neutral-800 pt-6">
                     <h3 className="text-lg font-semibold mb-4">Knowledge Base</h3>
