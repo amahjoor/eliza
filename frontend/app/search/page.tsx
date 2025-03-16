@@ -179,7 +179,7 @@ const SearchResultCard = ({ result, type }: { result: any, type: string }) => {
   );
 };
 
-const SearchResultsSection = ({ title, results, type }: { title: string, results: any[], type: string }) => {
+const SearchResultsSection = ({ title, results, type, query }: { title: string, results: any[], type: string, query: string }) => {
   if (results.length === 0) {
     return null;
   }
@@ -261,28 +261,28 @@ export default function SearchPage() {
     if (activeTab === 'all') {
       return (
         <>
-          <SearchResultsSection title="Meetings" results={results.meetings} type="meeting" />
-          <SearchResultsSection title="People" results={results.people} type="person" />
-          <SearchResultsSection title="Projects" results={results.projects} type="project" />
-          <SearchResultsSection title="Knowledge Base" results={results.knowledgeBase} type="knowledge" />
+          <SearchResultsSection title="Meetings" results={results.meetings} type="meeting" query={query} />
+          <SearchResultsSection title="People" results={results.people} type="person" query={query} />
+          <SearchResultsSection title="Projects" results={results.projects} type="project" query={query} />
+          <SearchResultsSection title="Knowledge Base" results={results.knowledgeBase} type="knowledge" query={query} />
         </>
       );
     }
     
     if (activeTab === 'meetings') {
-      return <SearchResultsSection title="Meetings" results={results.meetings} type="meeting" />;
+      return <SearchResultsSection title="Meetings" results={results.meetings} type="meeting" query={query} />;
     }
     
     if (activeTab === 'people') {
-      return <SearchResultsSection title="People" results={results.people} type="person" />;
+      return <SearchResultsSection title="People" results={results.people} type="person" query={query} />;
     }
     
     if (activeTab === 'projects') {
-      return <SearchResultsSection title="Projects" results={results.projects} type="project" />;
+      return <SearchResultsSection title="Projects" results={results.projects} type="project" query={query} />;
     }
     
     if (activeTab === 'knowledge') {
-      return <SearchResultsSection title="Knowledge Base" results={results.knowledgeBase} type="knowledge" />;
+      return <SearchResultsSection title="Knowledge Base" results={results.knowledgeBase} type="knowledge" query={query} />;
     }
     
     return null;
