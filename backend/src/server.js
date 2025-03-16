@@ -17,6 +17,7 @@ const knowledgeBaseRoutes = require('./routes/knowledgeBase.routes');
 const settingsRoutes = require('./routes/settings.routes');
 const audioRoutes = require('./routes/audio.routes');
 const searchRoutes = require('./routes/search.routes');
+const integrationRoutes = require('./routes/integration.routes');
 
 const app = express();
 const httpServer = createServer(app);
@@ -51,6 +52,7 @@ app.use('/api/knowledge-base', knowledgeBaseRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/audio', audioRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/integration', integrationRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
