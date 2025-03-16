@@ -31,11 +31,11 @@ export default function KnowledgePage() {
       title?: string;
     }>;
   }>({ nodes: [], edges: [] })
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [activeItem, setActiveItem] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [activeItem, setActiveItem] = useState<number | null>(null)
   
   // Fetch knowledge data when user is authenticated
   useEffect(() => {
