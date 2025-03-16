@@ -35,7 +35,7 @@ export default function KnowledgePage() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [activeItem, setActiveItem] = useState<number | null>(null)
+  const [activeItem, setActiveItem] = useState<string | null>(null)
   
   // Fetch knowledge data when user is authenticated
   useEffect(() => {
@@ -138,7 +138,7 @@ export default function KnowledgePage() {
   // Get all unique tags
   const allTags = Array.from(new Set(
     knowledgeItems.flatMap(item => item.tags)
-  )).sort()
+  )).sort() as string[]
   
   // Filter knowledge items based on search and tags
   const filteredItems = knowledgeItems.filter(item => {
@@ -193,7 +193,7 @@ export default function KnowledgePage() {
         
         {/* Tags */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {allTags.map(tag => (
+          {allTags.map((tag: string) => (
             <button
               key={tag}
               className={`px-3 py-1 text-sm rounded-full transition-colors ${
