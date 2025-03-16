@@ -1,10 +1,13 @@
 import { OpenAI } from 'openai';
-import Meeting from '../../models/Meeting';
-import Transcript from '../../models/Transcript';
-import MeetingNote from '../../models/MeetingNote';
-import Template from '../../models/Template';
-import User from '../../models/User';
+import { sequelize } from '../../models';
 import { NoteGenerationOptions } from '../../types/ai';
+
+// Import models
+const Meeting = sequelize.models.Meeting;
+const Transcript = sequelize.models.Transcript;
+const MeetingNote = sequelize.models.MeetingNote;
+const Template = sequelize.models.Template;
+const User = sequelize.models.User;
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -19,7 +22,7 @@ export const generateMeetingNotes = async (
   userId: string,
   templateId?: string,
   customInstructions?: string
-): Promise<MeetingNote> => {
+): Promise<any> => {
   try {
     // Fetch meeting and transcript data
     const meeting = await Meeting.findByPk(meetingId, {
@@ -120,7 +123,12 @@ const extractActionItems = (content: string): Array<{
   status: string;
   dueDate: string | null;
 }> => {
-  const actionItems = [];
+  const actionItems: Array<{
+    task: string;
+    assignee: string;
+    status: string;
+    dueDate: string | null;
+  }> = [];
   const actionItemRegex = /\b([A-Z][a-z]+ (?:[A-Z][a-z]+ )?(?:to|will|should|must|needs to)) (.*?)(?:\.|$)/gm;
   
   let match;
@@ -146,11 +154,20 @@ const generateOutline = (content: string): Array<{
   title: string;
   items: Array<string | { title: string; items: string[] }>;
 }> => {
-  const outline = [];
+  const outline: Array<{
+    title: string;
+    items: Array<string | { title: string; items: string[] }>;
+  }> = [];
   const lines = content.split('\n');
   
-  let currentSection = null;
-  let currentSubsection = null;
+  let currentSection: {
+    title: string;
+    items: Array<string | { title: string; items: string[] }>;
+  } | null = null;
+  let currentSubsection: {
+    title: string;
+    items: string[];
+  } | null = null;
   
   for (const line of lines) {
     // Check for main headings (# or ##)
@@ -217,7 +234,7 @@ export const generateCustomMeetingNotes = async (
   meetingId: string,
   userId: string,
   options: NoteGenerationOptions
-): Promise<MeetingNote> => {
+): Promise<any> => {
   try {
     // Fetch meeting and transcript data
     const meeting = await Meeting.findByPk(meetingId, {
