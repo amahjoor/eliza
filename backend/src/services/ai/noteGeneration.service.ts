@@ -65,7 +65,8 @@ export const generateMeetingNotes = async (
     const transcriptText = transcripts.length > 0 ? transcripts[0].content : '';
     
     // Prepare system prompt
-    const systemPrompt = template.systemPrompt || 
+    const templateData = template.get ? template.get() : {};
+    const systemPrompt = templateData.systemPrompt || 
       `You are an AI assistant that creates concise, well-structured meeting notes. 
       Analyze the meeting transcript and create professional notes with the following sections:
       1. Summary
@@ -105,7 +106,7 @@ export const generateMeetingNotes = async (
       format: 'markdown',
       actionItems,
       aiGenerated: true,
-      templateId: template.id,
+      templateId: templateData.id,
       outline: generateOutline(aiContent),
       summary: extractSummary(aiContent)
     });
