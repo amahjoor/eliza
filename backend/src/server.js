@@ -14,6 +14,7 @@ const transcriptRoutes = require('./routes/transcript.routes');
 const projectRoutes = require('./routes/project.routes');
 const peopleRoutes = require('./routes/people.routes');
 const knowledgeBaseRoutes = require('./routes/knowledgeBase.routes');
+const settingsRoutes = require('./routes/settings.routes');
 
 const app = express();
 const httpServer = createServer(app);
@@ -45,6 +46,7 @@ app.use('/api/transcripts', transcriptRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/people', peopleRoutes);
 app.use('/api/knowledge-base', knowledgeBaseRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
