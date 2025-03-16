@@ -1,202 +1,142 @@
 import { Request, Response } from 'express';
-import { Person, Project, Meeting, Transcript, MeetingNote } from '../models';
 import { 
-  generatePersonInsights, 
-  generateProjectInsights, 
-  generateMeetingInsights 
+  generatePersonInsights,
+  generateProjectInsights,
+  generateMeetingInsights
 } from '../services/ai/insightGeneration.service';
+import { InsightGenerationOptions } from '../types/ai';
 
 /**
- * Generate insights for a person
+ * Controller for generating insights about a person
  */
-export const generatePersonInsightsController = async (req: Request, res: Response) => {
+export const generatePersonInsightsController = async (
+  req: Request,
+  res: Response
+): Promise<Response | undefined> => {
   try {
     const { personId } = req.params;
-    const userId = (req as any).user.id;
     
-    // Fetch person data
-    const person = await Person.findOne({
-      where: { id: personId, userId },
-      include: [
-        { 
-          model: Meeting, 
-          as: 'meetings',
-          include: [
-            { model: Transcript, as: 'transcripts' },
-            { model: MeetingNote, as: 'notes' }
-          ]
-        }
-      ]
-    });
-    
-    if (!person) {
-      return res.status(404).json({ error: 'Person not found' });
+    if (!personId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Person ID is required'
+      });
     }
     
-    // Extract meeting history
-    const meetingHistory = person.meetings.map(meeting => ({
-      title: meeting.title,
-      date: meeting.date,
-      role: (meeting as any).MeetingAttendees?.role || 'Participant',
-      contributions: []
-    }));
-    
-    // Extract transcript excerpts
-    const transcriptExcerpts = person.meetings
-      .filter(meeting => meeting.transcripts && meeting.transcripts.length > 0)
-      .map(meeting => {
-        const transcript = meeting.transcripts[0];
-        const content = transcript.content;
-        
-        // Extract parts of the transcript where this person is speaking
-        // This is a simplified version - in a real implementation, you would use
-        // the speaker map to identify this person's contributions
-        const personName = `${person.firstName} ${person.lastName}`;
-        const lines = content.split('\n');
-        const personLines = lines.filter(line => line.includes(personName));
-        
-        return personLines.join('\n');
-      });
+    // Extract options from request body
+    const options: InsightGenerationOptions = {
+      depth: req.body.depth || 'detailed',
+      timeframe: req.body.timeframe,
+      focusAreas: req.body.focusAreas
+    };
     
     // Generate insights
-    const insights = await generatePersonInsights(
-      personId,
-      `${person.firstName} ${person.lastName}`,
-      meetingHistory,
-      transcriptExcerpts
-    );
+    const insights = await generatePersonInsights(personId, options);
     
-    // Update person with insights
-    await person.update({
-      aiSummary: insights.summary,
-      networkConnectivity: insights.networkConnectivity,
-      contributions: person.contributions || []
+    return res.status(200).json({
+      success: true,
+      data: {
+        personId,
+        insights: insights.insights,
+        // Additional fields can be added here if needed
+      }
     });
-    
-    res.status(200).json(insights);
   } catch (error) {
     console.error('Error generating person insights:', error);
-    res.status(500).json({ error: 'Failed to generate person insights' });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate person insights',
+      error: (error as Error).message
+    });
   }
 };
 
 /**
- * Generate insights for a project
+ * Controller for generating insights about a project
  */
-export const generateProjectInsightsController = async (req: Request, res: Response) => {
+export const generateProjectInsightsController = async (
+  req: Request,
+  res: Response
+): Promise<Response | undefined> => {
   try {
     const { projectId } = req.params;
-    const userId = (req as any).user.id;
     
-    // Fetch project data
-    const project = await Project.findOne({
-      where: { id: projectId, userId },
-      include: [
-        { 
-          model: Meeting, 
-          as: 'meetings',
-          include: [
-            { model: MeetingNote, as: 'notes' }
-          ]
-        },
-        {
-          model: Person,
-          as: 'members'
-        }
-      ]
-    });
-    
-    if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
+    if (!projectId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project ID is required'
+      });
     }
     
-    // Extract meeting data
-    const relatedMeetings = project.meetings.map(meeting => ({
-      title: meeting.title,
-      date: meeting.date,
-      summary: meeting.notes && meeting.notes.length > 0 ? meeting.notes[0].summary : '',
-      actionItems: meeting.notes && meeting.notes.length > 0 ? meeting.notes[0].actionItems : []
-    }));
-    
-    // Extract team member data
-    const teamMembers = project.members.map(member => ({
-      name: `${member.firstName} ${member.lastName}`,
-      role: (member as any).ProjectMembers?.role || 'Team Member',
-      expertiseAreas: []
-    }));
+    // Extract options from request body
+    const options: InsightGenerationOptions = {
+      depth: req.body.depth || 'detailed',
+      timeframe: req.body.timeframe,
+      focusAreas: req.body.focusAreas
+    };
     
     // Generate insights
-    const insights = await generateProjectInsights(
-      projectId,
-      project.name,
-      project.description || '',
-      relatedMeetings,
-      teamMembers
-    );
+    const insights = await generateProjectInsights(projectId, options);
     
-    // Update project with insights
-    await project.update({
-      statusSummary: insights.statusSummary,
-      progressScore: insights.progressScore,
-      keyRisks: insights.keyRisks,
-      nextSteps: insights.nextSteps
+    return res.status(200).json({
+      success: true,
+      data: {
+        projectId,
+        insights: insights.insights,
+        // Additional fields can be added here if needed
+      }
     });
-    
-    res.status(200).json(insights);
   } catch (error) {
     console.error('Error generating project insights:', error);
-    res.status(500).json({ error: 'Failed to generate project insights' });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate project insights',
+      error: (error as Error).message
+    });
   }
 };
 
 /**
- * Generate insights for a meeting
+ * Controller for generating insights about a meeting
  */
-export const generateMeetingInsightsController = async (req: Request, res: Response) => {
+export const generateMeetingInsightsController = async (
+  req: Request,
+  res: Response
+): Promise<Response | undefined> => {
   try {
     const { meetingId } = req.params;
-    const userId = (req as any).user.id;
     
-    // Fetch meeting data
-    const meeting = await Meeting.findOne({
-      where: { id: meetingId, userId },
-      include: [
-        { model: Transcript, as: 'transcripts' },
-        { model: MeetingNote, as: 'notes' },
-        { model: Person, as: 'attendees' }
-      ]
-    });
-    
-    if (!meeting) {
-      return res.status(404).json({ error: 'Meeting not found' });
+    if (!meetingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Meeting ID is required'
+      });
     }
     
-    if (!meeting.transcripts || meeting.transcripts.length === 0) {
-      return res.status(400).json({ error: 'Meeting transcript not found' });
-    }
-    
-    if (!meeting.notes || meeting.notes.length === 0) {
-      return res.status(400).json({ error: 'Meeting notes not found' });
-    }
-    
-    // Extract attendee data
-    const attendees = meeting.attendees.map(attendee => ({
-      name: `${attendee.firstName} ${attendee.lastName}`,
-      role: (attendee as any).MeetingAttendees?.role || 'Participant'
-    }));
+    // Extract options from request body
+    const options: InsightGenerationOptions = {
+      depth: req.body.depth || 'detailed',
+      timeframe: req.body.timeframe,
+      focusAreas: req.body.focusAreas
+    };
     
     // Generate insights
-    const insights = await generateMeetingInsights(
-      meetingId,
-      meeting.title,
-      meeting.transcripts[0].content,
-      meeting.notes[0].content,
-      attendees
-    );
+    const insights = await generateMeetingInsights(meetingId, options);
     
-    res.status(200).json(insights);
+    return res.status(200).json({
+      success: true,
+      data: {
+        meetingId,
+        insights: insights.insights,
+        // Additional fields can be added here if needed
+      }
+    });
   } catch (error) {
     console.error('Error generating meeting insights:', error);
-    res.status(500).json({ error: 'Failed to generate meeting insights' });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate meeting insights',
+      error: (error as Error).message
+    });
   }
 };

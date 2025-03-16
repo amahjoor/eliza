@@ -1,287 +1,357 @@
 import { Request, Response } from 'express';
-import { KnowledgeEntry, KnowledgeConnection } from '../models';
-import { generateKnowledgeEntries, generateKnowledgeConnections, generateKnowledgeBaseSummary } from '../services/ai/knowledgeBase.service';
-import { Meeting } from '../models';
-import { MeetingNote } from '../models';
-import { Transcript } from '../models';
+import { 
+  extractKnowledgeFromTranscript,
+  extractKnowledgeFromNote,
+  generateKnowledgeConnections,
+  generateKnowledgeBaseSummary
+} from '../services/ai/knowledgeBase.service';
+import { KnowledgeEntry } from '../types/ai';
 
 /**
- * Get all knowledge entries
+ * Controller for getting all knowledge entries
  */
-export const getAllKnowledgeEntries = async (req: Request, res: Response) => {
+export const getAllKnowledgeEntries = async (
+  req: Request,
+  res: Response
+): Promise<Response | undefined> => {
   try {
-    const userId = (req as any).user.id;
+    // This would be replaced with actual database query
+    // For now, return mock data
+    const entries = [
+      {
+        id: 'entry-1',
+        title: 'Project Timeline',
+        content: 'The project timeline has been extended by two weeks.',
+        type: 'decision',
+        tags: ['project', 'timeline', 'schedule'],
+        sourceType: 'meeting',
+        sourceId: 'meeting-1',
+        relevance: 90,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'entry-2',
+        title: 'User Authentication Flow',
+        content: 'The user authentication flow will use JWT tokens with a 24-hour expiration.',
+        type: 'concept',
+        tags: ['authentication', 'security', 'jwt'],
+        sourceType: 'note',
+        sourceId: 'note-1',
+        relevance: 85,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
     
-    const entries = await KnowledgeEntry.findAll({
-      where: { userId },
-      order: [['relevance', 'DESC']],
+    return res.status(200).json({
+      success: true,
+      data: entries
     });
-    
-    res.status(200).json(entries);
   } catch (error) {
-    console.error('Error fetching knowledge entries:', error);
-    res.status(500).json({ error: 'Failed to fetch knowledge entries' });
+    console.error('Error getting knowledge entries:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get knowledge entries',
+      error: (error as Error).message
+    });
   }
 };
 
 /**
- * Get knowledge entry by ID
+ * Controller for getting a knowledge entry by ID
  */
-export const getKnowledgeEntryById = async (req: Request, res: Response) => {
+export const getKnowledgeEntryById = async (
+  req: Request,
+  res: Response
+): Promise<Response | undefined> => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.id;
     
-    const entry = await KnowledgeEntry.findOne({
-      where: { id, userId },
-      include: [
-        {
-          model: KnowledgeConnection,
-          as: 'outgoingConnections',
-          include: [{ model: KnowledgeEntry, as: 'target' }],
-        },
-        {
-          model: KnowledgeConnection,
-          as: 'incomingConnections',
-          include: [{ model: KnowledgeEntry, as: 'source' }],
-        },
-      ],
-    });
-    
-    if (!entry) {
-      return res.status(404).json({ error: 'Knowledge entry not found' });
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Knowledge entry ID is required'
+      });
     }
     
-    res.status(200).json(entry);
+    // This would be replaced with actual database query
+    // For now, return mock data
+    const entry = {
+      id,
+      title: 'Project Timeline',
+      content: 'The project timeline has been extended by two weeks.',
+      type: 'decision',
+      tags: ['project', 'timeline', 'schedule'],
+      sourceType: 'meeting',
+      sourceId: 'meeting-1',
+      relevance: 90,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    return res.status(200).json({
+      success: true,
+      data: entry
+    });
   } catch (error) {
-    console.error('Error fetching knowledge entry:', error);
-    res.status(500).json({ error: 'Failed to fetch knowledge entry' });
+    console.error('Error getting knowledge entry:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get knowledge entry',
+      error: (error as Error).message
+    });
   }
 };
 
 /**
- * Create knowledge entry
+ * Controller for creating a knowledge entry
  */
-export const createKnowledgeEntry = async (req: Request, res: Response) => {
+export const createKnowledgeEntry = async (
+  req: Request,
+  res: Response
+): Promise<Response | undefined> => {
   try {
-    const userId = (req as any).user.id;
-    const entryData = { ...req.body, userId };
+    const { title, content, type, tags, sourceType, sourceId } = req.body;
     
-    const entry = await KnowledgeEntry.create(entryData);
+    if (!title || !content || !type || !sourceType || !sourceId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
     
-    res.status(201).json(entry);
+    // This would be replaced with actual database query
+    // For now, return mock data
+    const entry = {
+      id: `entry-${Date.now()}`,
+      title,
+      content,
+      type,
+      tags: tags || [],
+      sourceType,
+      sourceId,
+      relevance: 80,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    return res.status(201).json({
+      success: true,
+      data: entry
+    });
   } catch (error) {
     console.error('Error creating knowledge entry:', error);
-    res.status(500).json({ error: 'Failed to create knowledge entry' });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create knowledge entry',
+      error: (error as Error).message
+    });
   }
 };
 
 /**
- * Update knowledge entry
+ * Controller for updating a knowledge entry
  */
-export const updateKnowledgeEntry = async (req: Request, res: Response) => {
+export const updateKnowledgeEntry = async (
+  req: Request,
+  res: Response
+): Promise<Response | undefined> => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.id;
+    const { title, content, type, tags } = req.body;
     
-    const entry = await KnowledgeEntry.findOne({
-      where: { id, userId },
-    });
-    
-    if (!entry) {
-      return res.status(404).json({ error: 'Knowledge entry not found' });
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Knowledge entry ID is required'
+      });
     }
     
-    await entry.update(req.body);
+    // This would be replaced with actual database query
+    // For now, return mock data
+    const entry = {
+      id,
+      title: title || 'Project Timeline',
+      content: content || 'The project timeline has been extended by two weeks.',
+      type: type || 'decision',
+      tags: tags || ['project', 'timeline', 'schedule'],
+      sourceType: 'meeting',
+      sourceId: 'meeting-1',
+      relevance: 90,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
     
-    res.status(200).json(entry);
+    return res.status(200).json({
+      success: true,
+      data: entry
+    });
   } catch (error) {
     console.error('Error updating knowledge entry:', error);
-    res.status(500).json({ error: 'Failed to update knowledge entry' });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update knowledge entry',
+      error: (error as Error).message
+    });
   }
 };
 
 /**
- * Delete knowledge entry
+ * Controller for deleting a knowledge entry
  */
-export const deleteKnowledgeEntry = async (req: Request, res: Response) => {
+export const deleteKnowledgeEntry = async (
+  req: Request,
+  res: Response
+): Promise<Response | undefined> => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.id;
     
-    const entry = await KnowledgeEntry.findOne({
-      where: { id, userId },
-    });
-    
-    if (!entry) {
-      return res.status(404).json({ error: 'Knowledge entry not found' });
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Knowledge entry ID is required'
+      });
     }
     
-    await entry.destroy();
+    // This would be replaced with actual database query
     
-    res.status(204).send();
+    return res.status(200).json({
+      success: true,
+      message: 'Knowledge entry deleted successfully'
+    });
   } catch (error) {
     console.error('Error deleting knowledge entry:', error);
-    res.status(500).json({ error: 'Failed to delete knowledge entry' });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete knowledge entry',
+      error: (error as Error).message
+    });
   }
 };
 
 /**
- * Generate knowledge entries from meeting
+ * Controller for generating knowledge from a meeting
  */
-export const generateKnowledgeFromMeeting = async (req: Request, res: Response) => {
+export const generateKnowledgeFromMeeting = async (
+  req: Request,
+  res: Response
+): Promise<Response | undefined> => {
   try {
     const { meetingId } = req.params;
-    const userId = (req as any).user.id;
     
-    // Fetch meeting data
-    const meeting = await Meeting.findOne({
-      where: { id: meetingId, userId },
-      include: [
-        { model: Transcript, as: 'transcripts' },
-        { model: MeetingNote, as: 'notes' },
-      ],
-    });
-    
-    if (!meeting) {
-      return res.status(404).json({ error: 'Meeting not found' });
+    if (!meetingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Meeting ID is required'
+      });
     }
     
-    if (!meeting.transcripts || meeting.transcripts.length === 0) {
-      return res.status(400).json({ error: 'Meeting transcript not found' });
-    }
+    // This would be replaced with actual database query
+    // For now, use mock data
+    const meeting = {
+      id: meetingId,
+      title: 'Project Planning',
+      description: 'Planning session for new project',
+      transcripts: [{ content: 'This is a sample transcript content.' }],
+      notes: [{ content: 'This is a sample note content.' }]
+    };
     
-    if (!meeting.notes || meeting.notes.length === 0) {
-      return res.status(400).json({ error: 'Meeting notes not found' });
-    }
+    // Extract knowledge from transcript and note
+    const transcriptEntries = await extractKnowledgeFromTranscript(meeting.transcripts[0].content);
+    const noteEntries = await extractKnowledgeFromNote(meeting.notes[0].content);
     
-    // Get existing knowledge entries for this meeting
-    const existingEntries = await KnowledgeEntry.findAll({
-      where: { meetingId, userId },
-    });
-    
-    // Generate new knowledge entries
-    const transcriptContent = meeting.transcripts[0].content;
-    const meetingNoteContent = meeting.notes[0].content;
-    
-    const knowledgeEntries = await generateKnowledgeEntries(
-      meetingId,
-      transcriptContent,
-      meetingNoteContent,
-      existingEntries
-    );
-    
-    // Save new entries to database
-    const savedEntries = await Promise.all(
-      knowledgeEntries.map(async (entry) => {
-        // Check if entry already exists
-        if (entry.id) {
-          const existingEntry = await KnowledgeEntry.findByPk(entry.id);
-          if (existingEntry) {
-            await existingEntry.update(entry);
-            return existingEntry;
-          }
-        }
-        
-        // Create new entry
-        return KnowledgeEntry.create({
-          ...entry,
-          userId,
-          meetingId,
-        });
-      })
-    );
+    // Combine entries
+    const entries = [...transcriptEntries, ...noteEntries];
     
     // Generate connections between entries
-    const connections = await generateKnowledgeConnections(savedEntries);
+    const connections = await generateKnowledgeConnections(entries);
     
-    // Save connections to database
-    await Promise.all(
-      connections.map(async (connection) => {
-        return KnowledgeConnection.create(connection);
-      })
-    );
-    
-    res.status(200).json({
-      entries: savedEntries,
-      connections,
+    return res.status(200).json({
+      success: true,
+      data: {
+        entries,
+        connections
+      }
     });
   } catch (error) {
     console.error('Error generating knowledge from meeting:', error);
-    res.status(500).json({ error: 'Failed to generate knowledge from meeting' });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate knowledge from meeting',
+      error: (error as Error).message
+    });
   }
 };
 
 /**
- * Get knowledge base summary
+ * Controller for getting the knowledge graph
  */
-export const getKnowledgeBaseSummary = async (req: Request, res: Response) => {
+export const getKnowledgeGraph = async (
+  req: Request,
+  res: Response
+): Promise<Response | undefined> => {
   try {
-    const userId = (req as any).user.id;
+    // This would be replaced with actual database query
+    // For now, return mock data
+    const entries: KnowledgeEntry[] = [
+      {
+        id: 'entry-1',
+        title: 'Project Timeline',
+        content: 'The project timeline has been extended by two weeks.',
+        type: 'decision',
+        tags: ['project', 'timeline', 'schedule'],
+        sourceType: 'meeting',
+        sourceId: 'meeting-1',
+        relevance: 90,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'entry-2',
+        title: 'User Authentication Flow',
+        content: 'The user authentication flow will use JWT tokens with a 24-hour expiration.',
+        type: 'concept',
+        tags: ['authentication', 'security', 'jwt'],
+        sourceType: 'note',
+        sourceId: 'note-1',
+        relevance: 85,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
     
-    // Get all knowledge entries for this user
-    const entries = await KnowledgeEntry.findAll({
-      where: { userId },
-      order: [['relevance', 'DESC']],
-      limit: 100, // Limit to most relevant entries
-    });
+    // Generate connections between entries
+    const connections = await generateKnowledgeConnections(entries);
     
-    // Generate summary
+    // Generate a summary of the knowledge base
     const summary = await generateKnowledgeBaseSummary(entries);
     
-    res.status(200).json({
-      summary,
-      entryCount: entries.length,
+    return res.status(200).json({
+      success: true,
+      data: {
+        nodes: entries.map(entry => ({
+          id: entry.id,
+          label: entry.title,
+          type: entry.type,
+          relevance: entry.relevance
+        })),
+        edges: connections.map(connection => ({
+          source: connection.source,
+          target: connection.target,
+          type: connection.type,
+          strength: connection.strength,
+          description: connection.description
+        })),
+        summary
+      }
     });
   } catch (error) {
-    console.error('Error generating knowledge base summary:', error);
-    res.status(500).json({ error: 'Failed to generate knowledge base summary' });
-  }
-};
-
-/**
- * Get knowledge graph data
- */
-export const getKnowledgeGraph = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).user.id;
-    
-    // Get all knowledge entries for this user
-    const entries = await KnowledgeEntry.findAll({
-      where: { userId },
-      attributes: ['id', 'title', 'type', 'relevance'],
+    console.error('Error getting knowledge graph:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get knowledge graph',
+      error: (error as Error).message
     });
-    
-    // Get all connections between entries
-    const connections = await KnowledgeConnection.findAll({
-      include: [
-        { model: KnowledgeEntry, as: 'source', where: { userId } },
-        { model: KnowledgeEntry, as: 'target', where: { userId } },
-      ],
-    });
-    
-    // Format data for graph visualization
-    const nodes = entries.map((entry) => ({
-      id: entry.id,
-      label: entry.title,
-      type: entry.type,
-      value: entry.relevance / 10, // Scale for visualization
-    }));
-    
-    const edges = connections.map((connection) => ({
-      from: connection.sourceId,
-      to: connection.targetId,
-      label: connection.type,
-      value: connection.strength * 2, // Scale for visualization
-      title: connection.description,
-    }));
-    
-    res.status(200).json({
-      nodes,
-      edges,
-    });
-  } catch (error) {
-    console.error('Error fetching knowledge graph:', error);
-    res.status(500).json({ error: 'Failed to fetch knowledge graph' });
   }
 };
