@@ -1,142 +1,85 @@
 import { Request, Response } from 'express';
 import { 
-  generatePersonInsights,
-  generateProjectInsights,
-  generateMeetingInsights
+  generatePersonInsights, 
+  generateProjectInsights, 
+  generateMeetingInsights 
 } from '../services/ai/insightGeneration.service';
 import { InsightGenerationOptions } from '../types/ai';
 
 /**
- * Controller for generating insights about a person
+ * Generates insights about a person based on their meeting participation
+ * @param req Request object
+ * @param res Response object
  */
-export const generatePersonInsightsController = async (
-  req: Request,
-  res: Response
-): Promise<Response | undefined> => {
+export const generatePersonInsightsController = async (req: Request, res: Response) => {
   try {
     const { personId } = req.params;
+    const options: InsightGenerationOptions = req.body.options || {};
     
+    // Validate personId
     if (!personId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Person ID is required'
-      });
+      return res.status(400).json({ error: 'Person ID is required' });
     }
-    
-    // Extract options from request body
-    const options: InsightGenerationOptions = {
-      depth: req.body.depth || 'detailed',
-      timeframe: req.body.timeframe,
-      focusAreas: req.body.focusAreas
-    };
     
     // Generate insights
     const insights = await generatePersonInsights(personId, options);
     
-    return res.status(200).json({
-      success: true,
-      data: {
-        personId,
-        insights: insights.insights,
-        // Additional fields can be added here if needed
-      }
-    });
+    // Return generated insights
+    return res.status(200).json(insights);
   } catch (error) {
     console.error('Error generating person insights:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to generate person insights',
-      error: (error as Error).message
-    });
+    return res.status(500).json({ error: 'Failed to generate person insights' });
   }
 };
 
 /**
- * Controller for generating insights about a project
+ * Generates insights about a project based on related meetings
+ * @param req Request object
+ * @param res Response object
  */
-export const generateProjectInsightsController = async (
-  req: Request,
-  res: Response
-): Promise<Response | undefined> => {
+export const generateProjectInsightsController = async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;
+    const options: InsightGenerationOptions = req.body.options || {};
     
+    // Validate projectId
     if (!projectId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Project ID is required'
-      });
+      return res.status(400).json({ error: 'Project ID is required' });
     }
-    
-    // Extract options from request body
-    const options: InsightGenerationOptions = {
-      depth: req.body.depth || 'detailed',
-      timeframe: req.body.timeframe,
-      focusAreas: req.body.focusAreas
-    };
     
     // Generate insights
     const insights = await generateProjectInsights(projectId, options);
     
-    return res.status(200).json({
-      success: true,
-      data: {
-        projectId,
-        insights: insights.insights,
-        // Additional fields can be added here if needed
-      }
-    });
+    // Return generated insights
+    return res.status(200).json(insights);
   } catch (error) {
     console.error('Error generating project insights:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to generate project insights',
-      error: (error as Error).message
-    });
+    return res.status(500).json({ error: 'Failed to generate project insights' });
   }
 };
 
 /**
- * Controller for generating insights about a meeting
+ * Generates insights about a meeting based on its transcript and notes
+ * @param req Request object
+ * @param res Response object
  */
-export const generateMeetingInsightsController = async (
-  req: Request,
-  res: Response
-): Promise<Response | undefined> => {
+export const generateMeetingInsightsController = async (req: Request, res: Response) => {
   try {
     const { meetingId } = req.params;
+    const options: InsightGenerationOptions = req.body.options || {};
     
+    // Validate meetingId
     if (!meetingId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Meeting ID is required'
-      });
+      return res.status(400).json({ error: 'Meeting ID is required' });
     }
-    
-    // Extract options from request body
-    const options: InsightGenerationOptions = {
-      depth: req.body.depth || 'detailed',
-      timeframe: req.body.timeframe,
-      focusAreas: req.body.focusAreas
-    };
     
     // Generate insights
     const insights = await generateMeetingInsights(meetingId, options);
     
-    return res.status(200).json({
-      success: true,
-      data: {
-        meetingId,
-        insights: insights.insights,
-        // Additional fields can be added here if needed
-      }
-    });
+    // Return generated insights
+    return res.status(200).json(insights);
   } catch (error) {
     console.error('Error generating meeting insights:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to generate meeting insights',
-      error: (error as Error).message
-    });
+    return res.status(500).json({ error: 'Failed to generate meeting insights' });
   }
 };

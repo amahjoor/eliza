@@ -1,357 +1,119 @@
 import { Request, Response } from 'express';
 import { 
-  extractKnowledgeFromTranscript,
-  extractKnowledgeFromNote,
+  extractKnowledgeFromTranscript, 
   generateKnowledgeConnections,
-  generateKnowledgeBaseSummary
+  searchKnowledgeBase
 } from '../services/ai/knowledgeBase.service';
-import { KnowledgeEntry } from '../types/ai';
 
 /**
- * Controller for getting all knowledge entries
+ * Extracts knowledge entries from a meeting transcript
+ * @param req Request object
+ * @param res Response object
  */
-export const getAllKnowledgeEntries = async (
-  req: Request,
-  res: Response
-): Promise<Response | undefined> => {
-  try {
-    // This would be replaced with actual database query
-    // For now, return mock data
-    const entries = [
-      {
-        id: 'entry-1',
-        title: 'Project Timeline',
-        content: 'The project timeline has been extended by two weeks.',
-        type: 'decision',
-        tags: ['project', 'timeline', 'schedule'],
-        sourceType: 'meeting',
-        sourceId: 'meeting-1',
-        relevance: 90,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: 'entry-2',
-        title: 'User Authentication Flow',
-        content: 'The user authentication flow will use JWT tokens with a 24-hour expiration.',
-        type: 'concept',
-        tags: ['authentication', 'security', 'jwt'],
-        sourceType: 'note',
-        sourceId: 'note-1',
-        relevance: 85,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
-    
-    return res.status(200).json({
-      success: true,
-      data: entries
-    });
-  } catch (error) {
-    console.error('Error getting knowledge entries:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to get knowledge entries',
-      error: (error as Error).message
-    });
-  }
-};
-
-/**
- * Controller for getting a knowledge entry by ID
- */
-export const getKnowledgeEntryById = async (
-  req: Request,
-  res: Response
-): Promise<Response | undefined> => {
-  try {
-    const { id } = req.params;
-    
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Knowledge entry ID is required'
-      });
-    }
-    
-    // This would be replaced with actual database query
-    // For now, return mock data
-    const entry = {
-      id,
-      title: 'Project Timeline',
-      content: 'The project timeline has been extended by two weeks.',
-      type: 'decision',
-      tags: ['project', 'timeline', 'schedule'],
-      sourceType: 'meeting',
-      sourceId: 'meeting-1',
-      relevance: 90,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    return res.status(200).json({
-      success: true,
-      data: entry
-    });
-  } catch (error) {
-    console.error('Error getting knowledge entry:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to get knowledge entry',
-      error: (error as Error).message
-    });
-  }
-};
-
-/**
- * Controller for creating a knowledge entry
- */
-export const createKnowledgeEntry = async (
-  req: Request,
-  res: Response
-): Promise<Response | undefined> => {
-  try {
-    const { title, content, type, tags, sourceType, sourceId } = req.body;
-    
-    if (!title || !content || !type || !sourceType || !sourceId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
-    }
-    
-    // This would be replaced with actual database query
-    // For now, return mock data
-    const entry = {
-      id: `entry-${Date.now()}`,
-      title,
-      content,
-      type,
-      tags: tags || [],
-      sourceType,
-      sourceId,
-      relevance: 80,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    return res.status(201).json({
-      success: true,
-      data: entry
-    });
-  } catch (error) {
-    console.error('Error creating knowledge entry:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to create knowledge entry',
-      error: (error as Error).message
-    });
-  }
-};
-
-/**
- * Controller for updating a knowledge entry
- */
-export const updateKnowledgeEntry = async (
-  req: Request,
-  res: Response
-): Promise<Response | undefined> => {
-  try {
-    const { id } = req.params;
-    const { title, content, type, tags } = req.body;
-    
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Knowledge entry ID is required'
-      });
-    }
-    
-    // This would be replaced with actual database query
-    // For now, return mock data
-    const entry = {
-      id,
-      title: title || 'Project Timeline',
-      content: content || 'The project timeline has been extended by two weeks.',
-      type: type || 'decision',
-      tags: tags || ['project', 'timeline', 'schedule'],
-      sourceType: 'meeting',
-      sourceId: 'meeting-1',
-      relevance: 90,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    return res.status(200).json({
-      success: true,
-      data: entry
-    });
-  } catch (error) {
-    console.error('Error updating knowledge entry:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to update knowledge entry',
-      error: (error as Error).message
-    });
-  }
-};
-
-/**
- * Controller for deleting a knowledge entry
- */
-export const deleteKnowledgeEntry = async (
-  req: Request,
-  res: Response
-): Promise<Response | undefined> => {
-  try {
-    const { id } = req.params;
-    
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Knowledge entry ID is required'
-      });
-    }
-    
-    // This would be replaced with actual database query
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Knowledge entry deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting knowledge entry:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to delete knowledge entry',
-      error: (error as Error).message
-    });
-  }
-};
-
-/**
- * Controller for generating knowledge from a meeting
- */
-export const generateKnowledgeFromMeeting = async (
-  req: Request,
-  res: Response
-): Promise<Response | undefined> => {
+export const extractKnowledgeController = async (req: Request, res: Response) => {
   try {
     const { meetingId } = req.params;
+    const { transcriptContent } = req.body;
     
+    // Validate meetingId and transcriptContent
     if (!meetingId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Meeting ID is required'
-      });
+      return res.status(400).json({ error: 'Meeting ID is required' });
     }
     
-    // This would be replaced with actual database query
-    // For now, use mock data
-    const meeting = {
-      id: meetingId,
-      title: 'Project Planning',
-      description: 'Planning session for new project',
-      transcripts: [{ content: 'This is a sample transcript content.' }],
-      notes: [{ content: 'This is a sample note content.' }]
-    };
+    if (!transcriptContent) {
+      return res.status(400).json({ error: 'Transcript content is required' });
+    }
     
-    // Extract knowledge from transcript and note
-    const transcriptEntries = await extractKnowledgeFromTranscript(meeting.transcripts[0].content);
-    const noteEntries = await extractKnowledgeFromNote(meeting.notes[0].content);
+    // Extract knowledge
+    const knowledgeEntries = await extractKnowledgeFromTranscript(meetingId, transcriptContent);
     
-    // Combine entries
-    const entries = [...transcriptEntries, ...noteEntries];
-    
-    // Generate connections between entries
-    const connections = await generateKnowledgeConnections(entries);
-    
-    return res.status(200).json({
-      success: true,
-      data: {
-        entries,
-        connections
-      }
-    });
+    // Return extracted knowledge
+    return res.status(200).json(knowledgeEntries);
   } catch (error) {
-    console.error('Error generating knowledge from meeting:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to generate knowledge from meeting',
-      error: (error as Error).message
-    });
+    console.error('Error extracting knowledge:', error);
+    return res.status(500).json({ error: 'Failed to extract knowledge from transcript' });
   }
 };
 
 /**
- * Controller for getting the knowledge graph
+ * Generates connections between knowledge entries
+ * @param req Request object
+ * @param res Response object
  */
-export const getKnowledgeGraph = async (
-  req: Request,
-  res: Response
-): Promise<Response | undefined> => {
+export const generateConnectionsController = async (req: Request, res: Response) => {
   try {
-    // This would be replaced with actual database query
-    // For now, return mock data
-    const entries: KnowledgeEntry[] = [
-      {
-        id: 'entry-1',
-        title: 'Project Timeline',
-        content: 'The project timeline has been extended by two weeks.',
-        type: 'decision',
-        tags: ['project', 'timeline', 'schedule'],
-        sourceType: 'meeting',
-        sourceId: 'meeting-1',
-        relevance: 90,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: 'entry-2',
-        title: 'User Authentication Flow',
-        content: 'The user authentication flow will use JWT tokens with a 24-hour expiration.',
-        type: 'concept',
-        tags: ['authentication', 'security', 'jwt'],
-        sourceType: 'note',
-        sourceId: 'note-1',
-        relevance: 85,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
+    const { knowledgeEntries } = req.body;
     
-    // Generate connections between entries
-    const connections = await generateKnowledgeConnections(entries);
+    // Validate knowledgeEntries
+    if (!knowledgeEntries || !Array.isArray(knowledgeEntries) || knowledgeEntries.length === 0) {
+      return res.status(400).json({ error: 'Knowledge entries are required' });
+    }
     
-    // Generate a summary of the knowledge base
-    const summary = await generateKnowledgeBaseSummary(entries);
+    // Generate connections
+    const connections = await generateKnowledgeConnections(knowledgeEntries);
     
-    return res.status(200).json({
-      success: true,
-      data: {
-        nodes: entries.map(entry => ({
-          id: entry.id,
-          label: entry.title,
-          type: entry.type,
-          relevance: entry.relevance
-        })),
-        edges: connections.map(connection => ({
-          source: connection.source,
-          target: connection.target,
-          type: connection.type,
-          strength: connection.strength,
-          description: connection.description
-        })),
-        summary
-      }
-    });
+    // Return generated connections
+    return res.status(200).json(connections);
+  } catch (error) {
+    console.error('Error generating knowledge connections:', error);
+    return res.status(500).json({ error: 'Failed to generate knowledge connections' });
+  }
+};
+
+/**
+ * Searches the knowledge base for relevant entries
+ * @param req Request object
+ * @param res Response object
+ */
+export const searchKnowledgeController = async (req: Request, res: Response) => {
+  try {
+    const { query, options } = req.body;
+    
+    // Validate query
+    if (!query) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+    
+    // Search knowledge base
+    const results = await searchKnowledgeBase(query, options);
+    
+    // Return search results
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error searching knowledge base:', error);
+    return res.status(500).json({ error: 'Failed to search knowledge base' });
+  }
+};
+
+/**
+ * Gets the knowledge graph data
+ * @param req Request object
+ * @param res Response object
+ */
+export const getKnowledgeGraphController = async (req: Request, res: Response) => {
+  try {
+    // In a real implementation, we would fetch the knowledge graph data from the database
+    // For now, we'll use mock data
+    const mockGraphData = {
+      nodes: [
+        { id: 'knowledge-1', title: 'Project Timeline', type: 'process', relevance: 85 },
+        { id: 'knowledge-2', title: 'Frontend Technology Stack', type: 'decision', relevance: 90 },
+        { id: 'knowledge-3', title: 'User Authentication Flow', type: 'process', relevance: 80 },
+        { id: 'knowledge-4', title: 'Database Schema', type: 'concept', relevance: 95 },
+        { id: 'knowledge-5', title: 'API Endpoints', type: 'fact', relevance: 85 }
+      ],
+      edges: [
+        { source: 'knowledge-1', target: 'knowledge-2', type: 'related', strength: 70, description: 'Timeline affects technology choices' },
+        { source: 'knowledge-2', target: 'knowledge-3', type: 'depends_on', strength: 85, description: 'Frontend depends on authentication' },
+        { source: 'knowledge-3', target: 'knowledge-4', type: 'related', strength: 60, description: 'Authentication requires database schema' },
+        { source: 'knowledge-4', target: 'knowledge-5', type: 'supports', strength: 90, description: 'Schema defines API structure' }
+      ]
+    };
+    
+    // Return knowledge graph data
+    return res.status(200).json(mockGraphData);
   } catch (error) {
     console.error('Error getting knowledge graph:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to get knowledge graph',
-      error: (error as Error).message
-    });
+    return res.status(500).json({ error: 'Failed to get knowledge graph' });
   }
 };
