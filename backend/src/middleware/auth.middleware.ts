@@ -1,54 +1,61 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { User } from '../models';
 
 /**
- * Authentication middleware
- * Verifies JWT token and adds user to request object
+ * Middleware to authenticate JWT tokens
  */
-export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | undefined> => {
   try {
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Authentication required. Please provide a valid token.' 
+      });
     }
     
     const token = authHeader.split(' ')[1];
     
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'eliza-secret-key') as any;
-    
-    // Find user by ID
-    const user = await User.findByPk(decoded.id);
-    
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid token' });
+    if (!token) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Authentication token is missing.' 
+      });
     }
     
-    // Add user to request object
-    (req as any).user = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    };
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'eliza-secret-key');
     
+    // Add user info to request object
+    (req as any).user = decoded;
+    
+    // Continue to the next middleware or route handler
     next();
   } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid authentication token.' 
+      });
+    }
+    
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Authentication token has expired. Please log in again.' 
+      });
+    }
+    
     console.error('Authentication error:', error);
-    res.status(401).json({ error: 'Authentication failed' });
-  }
-};
-
-/**
- * Admin authorization middleware
- * Requires user to have admin role
- */
-export const authorizeAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if ((req as any).user && (req as any).user.role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ error: 'Admin access required' });
+    return res.status(500).json({ 
+      success: false, 
+      message: 'An error occurred during authentication.' 
+    });
   }
 };
