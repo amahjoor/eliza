@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
-import * as d3 from 'd3'
+import React, { useEffect, useRef } from 'react'
 
 interface KnowledgeGraphProps {
   nodes: Array<{
@@ -17,206 +16,278 @@ interface KnowledgeGraphProps {
     value?: number;
     title?: string;
   }>;
-  onNodeClick?: (nodeId: string) => void;
-  width?: number;
   height?: number;
+  onNodeClick?: (nodeId: string) => void;
 }
 
 export default function KnowledgeGraph({ 
   nodes, 
   edges, 
-  onNodeClick,
-  width = 800,
-  height = 600
+  height = 400,
+  onNodeClick 
 }: KnowledgeGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const networkRef = useRef<any>(null)
   
   useEffect(() => {
-    if (!containerRef.current || nodes.length === 0) {
-      setIsLoading(true)
-      return
-    }
+    if (!containerRef.current || nodes.length === 0) return
     
-    setIsLoading(false)
+    // In a real implementation, this would use a library like vis.js
+    // For now, we'll create a simple visualization using HTML/CSS
+    const container = containerRef.current
     
-    // Clear previous graph
-    d3.select(containerRef.current).select('svg').remove()
+    // Clear previous content
+    container.innerHTML = ''
     
-    // Create SVG container
-    const svg = d3.select(containerRef.current)
-      .append('svg')
-      .attr('width', width)
-      .attr('height', height)
-      .attr('viewBox', [0, 0, width, height])
-      .attr('style', 'max-width: 100%; height: auto;')
+    // Create a simple graph visualization
+    const graphContainer = document.createElement('div')
+    graphContainer.style.position = 'relative'
+    graphContainer.style.width = '100%'
+    graphContainer.style.height = `${height}px`
+    graphContainer.style.backgroundColor = 'rgba(30, 30, 30, 0.5)'
+    graphContainer.style.borderRadius = '8px'
     
-    // Create links (edges)
-    const links = edges.map(edge => ({
-      source: edge.from,
-      target: edge.to,
-      value: edge.value || 1,
-      label: edge.label || '',
-      title: edge.title || ''
-    }))
+    // Create nodes
+    const nodeElements: {[key: string]: HTMLDivElement} = {}
+    const nodePositions: {[key: string]: {x: number, y: number}} = {}
     
-    // Create simulation
-    const simulation = d3.forceSimulation(nodes)
-      .force('link', d3.forceLink(links).id((d: any) => d.id).distance(100))
-      .force('charge', d3.forceManyBody().strength(-300))
-      .force('center', d3.forceCenter(width / 2, height / 2))
+    // Calculate positions using a simple force-directed layout algorithm
+    // For simplicity, we'll use a circular layout
+    const centerX = graphContainer.clientWidth / 2 || 300
+    const centerY = graphContainer.clientHeight / 2 || 200
+    const radius = Math.min(centerX, centerY) * 0.8
     
-    // Add links
-    const link = svg.append('g')
-      .attr('stroke', '#999')
-      .attr('stroke-opacity', 0.6)
-      .selectAll('line')
-      .data(links)
-      .join('line')
-      .attr('stroke-width', d => Math.sqrt(d.value))
-    
-    // Add link labels
-    const linkLabels = svg.append('g')
-      .attr('class', 'link-labels')
-      .selectAll('text')
-      .data(links)
-      .join('text')
-      .attr('font-size', 8)
-      .attr('fill', '#aaa')
-      .text(d => d.label || '')
-    
-    // Define node colors based on type
-    const colorScale = d3.scaleOrdinal()
-      .domain(['concept', 'decision', 'technical', 'milestone', 'relationship'])
-      .range(['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'])
-    
-    // Add nodes
-    const node = svg.append('g')
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 1.5)
-      .selectAll('circle')
-      .data(nodes)
-      .join('circle')
-      .attr('r', d => Math.sqrt(d.value) * 5 + 5)
-      .attr('fill', d => colorScale(d.type) as string)
-      .call(drag(simulation) as any)
-      .on('click', (event, d) => {
-        if (onNodeClick) onNodeClick(d.id)
+    nodes.forEach((node, index) => {
+      const angle = (index / nodes.length) * 2 * Math.PI
+      const x = centerX + radius * Math.cos(angle)
+      const y = centerY + radius * Math.sin(angle)
+      
+      nodePositions[node.id] = { x, y }
+      
+      const nodeElement = document.createElement('div')
+      nodeElement.style.position = 'absolute'
+      nodeElement.style.left = `${x}px`
+      nodeElement.style.top = `${y}px`
+      nodeElement.style.transform = 'translate(-50%, -50%)'
+      nodeElement.style.width = `${Math.max(30, Math.min(60, node.value * 10))}px`
+      nodeElement.style.height = `${Math.max(30, Math.min(60, node.value * 10))}px`
+      nodeElement.style.borderRadius = '50%'
+      nodeElement.style.display = 'flex'
+      nodeElement.style.alignItems = 'center'
+      nodeElement.style.justifyContent = 'center'
+      nodeElement.style.fontSize = '12px'
+      nodeElement.style.fontWeight = 'bold'
+      nodeElement.style.color = 'white'
+      nodeElement.style.cursor = 'pointer'
+      nodeElement.style.transition = 'all 0.3s ease'
+      nodeElement.style.zIndex = '2'
+      nodeElement.title = node.label
+      
+      // Set color based on node type
+      switch (node.type) {
+        case 'person':
+          nodeElement.style.backgroundColor = 'rgba(59, 130, 246, 0.8)'
+          break
+        case 'project':
+          nodeElement.style.backgroundColor = 'rgba(16, 185, 129, 0.8)'
+          break
+        case 'meeting':
+          nodeElement.style.backgroundColor = 'rgba(245, 158, 11, 0.8)'
+          break
+        case 'concept':
+          nodeElement.style.backgroundColor = 'rgba(139, 92, 246, 0.8)'
+          break
+        default:
+          nodeElement.style.backgroundColor = 'rgba(156, 163, 175, 0.8)'
+      }
+      
+      // Add label
+      nodeElement.textContent = node.label.substring(0, 2)
+      
+      // Add hover effect
+      nodeElement.addEventListener('mouseenter', () => {
+        nodeElement.style.transform = 'translate(-50%, -50%) scale(1.2)'
+        
+        // Show tooltip
+        const tooltip = document.createElement('div')
+        tooltip.className = 'node-tooltip'
+        tooltip.style.position = 'absolute'
+        tooltip.style.left = `${x}px`
+        tooltip.style.top = `${y + 30}px`
+        tooltip.style.transform = 'translateX(-50%)'
+        tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
+        tooltip.style.color = 'white'
+        tooltip.style.padding = '4px 8px'
+        tooltip.style.borderRadius = '4px'
+        tooltip.style.fontSize = '12px'
+        tooltip.style.zIndex = '3'
+        tooltip.style.pointerEvents = 'none'
+        tooltip.textContent = node.label
+        
+        graphContainer.appendChild(tooltip)
+        nodeElement.dataset.tooltipId = 'node-tooltip-' + node.id
       })
-    
-    // Add node labels
-    const nodeLabels = svg.append('g')
-      .attr('class', 'node-labels')
-      .selectAll('text')
-      .data(nodes)
-      .join('text')
-      .attr('font-size', 10)
-      .attr('fill', '#fff')
-      .attr('text-anchor', 'middle')
-      .attr('dy', 3)
-      .text(d => d.label)
-    
-    // Add tooltips
-    node.append('title')
-      .text(d => d.label)
-    
-    // Update positions on simulation tick
-    simulation.on('tick', () => {
-      link
-        .attr('x1', d => (d.source as any).x)
-        .attr('y1', d => (d.source as any).y)
-        .attr('x2', d => (d.target as any).x)
-        .attr('y2', d => (d.target as any).y)
       
-      linkLabels
-        .attr('x', d => ((d.source as any).x + (d.target as any).x) / 2)
-        .attr('y', d => ((d.source as any).y + (d.target as any).y) / 2)
+      nodeElement.addEventListener('mouseleave', () => {
+        nodeElement.style.transform = 'translate(-50%, -50%)'
+        
+        // Remove tooltip
+        const tooltips = graphContainer.querySelectorAll('.node-tooltip')
+        tooltips.forEach(tooltip => tooltip.remove())
+      })
       
-      node
-        .attr('cx', d => d.x = Math.max(20, Math.min(width - 20, d.x)))
-        .attr('cy', d => d.y = Math.max(20, Math.min(height - 20, d.y)))
+      // Add click handler
+      if (onNodeClick) {
+        nodeElement.addEventListener('click', () => {
+          onNodeClick(node.id)
+        })
+      }
       
-      nodeLabels
-        .attr('x', d => d.x)
-        .attr('y', d => d.y)
+      nodeElements[node.id] = nodeElement
+      graphContainer.appendChild(nodeElement)
     })
     
-    // Cleanup function
+    // Create edges
+    edges.forEach(edge => {
+      if (!nodePositions[edge.from] || !nodePositions[edge.to]) return
+      
+      const fromPos = nodePositions[edge.from]
+      const toPos = nodePositions[edge.to]
+      
+      const edgeElement = document.createElement('div')
+      edgeElement.style.position = 'absolute'
+      edgeElement.style.left = `${fromPos.x}px`
+      edgeElement.style.top = `${fromPos.y}px`
+      edgeElement.style.width = '1px'
+      edgeElement.style.height = '1px'
+      edgeElement.style.zIndex = '1'
+      
+      // Calculate the angle and length of the edge
+      const dx = toPos.x - fromPos.x
+      const dy = toPos.y - fromPos.y
+      const length = Math.sqrt(dx * dx + dy * dy)
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+      
+      // Create the line
+      const line = document.createElement('div')
+      line.style.position = 'absolute'
+      line.style.width = `${length}px`
+      line.style.height = '2px'
+      line.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'
+      line.style.transformOrigin = '0 50%'
+      line.style.transform = `rotate(${angle}deg)`
+      
+      // Add edge value (thickness)
+      if (edge.value) {
+        line.style.height = `${Math.max(1, Math.min(4, edge.value))}px`
+        line.style.opacity = `${Math.min(1, edge.value / 5)}`
+      }
+      
+      edgeElement.appendChild(line)
+      graphContainer.appendChild(edgeElement)
+    })
+    
+    container.appendChild(graphContainer)
+    
+    // Add legend
+    const legend = document.createElement('div')
+    legend.style.position = 'absolute'
+    legend.style.bottom = '10px'
+    legend.style.right = '10px'
+    legend.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'
+    legend.style.padding = '8px'
+    legend.style.borderRadius = '4px'
+    legend.style.fontSize = '12px'
+    
+    const legendTypes = [
+      { type: 'person', color: 'rgba(59, 130, 246, 0.8)', label: 'Person' },
+      { type: 'project', color: 'rgba(16, 185, 129, 0.8)', label: 'Project' },
+      { type: 'meeting', color: 'rgba(245, 158, 11, 0.8)', label: 'Meeting' },
+      { type: 'concept', color: 'rgba(139, 92, 246, 0.8)', label: 'Concept' }
+    ]
+    
+    legendTypes.forEach(item => {
+      const legendItem = document.createElement('div')
+      legendItem.style.display = 'flex'
+      legendItem.style.alignItems = 'center'
+      legendItem.style.marginBottom = '4px'
+      
+      const legendColor = document.createElement('div')
+      legendColor.style.width = '12px'
+      legendColor.style.height = '12px'
+      legendColor.style.borderRadius = '50%'
+      legendColor.style.backgroundColor = item.color
+      legendColor.style.marginRight = '6px'
+      
+      const legendLabel = document.createElement('span')
+      legendLabel.textContent = item.label
+      legendLabel.style.color = 'white'
+      
+      legendItem.appendChild(legendColor)
+      legendItem.appendChild(legendLabel)
+      legend.appendChild(legendItem)
+    })
+    
+    graphContainer.appendChild(legend)
+    
+    // Add stats
+    const stats = document.createElement('div')
+    stats.style.position = 'absolute'
+    stats.style.top = '10px'
+    stats.style.left = '10px'
+    stats.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'
+    stats.style.padding = '8px'
+    stats.style.borderRadius = '4px'
+    stats.style.fontSize = '12px'
+    stats.style.color = 'white'
+    stats.textContent = `${nodes.length} nodes, ${edges.length} connections`
+    
+    graphContainer.appendChild(stats)
+    
     return () => {
-      simulation.stop()
+      // Cleanup
+      if (networkRef.current) {
+        networkRef.current.destroy()
+        networkRef.current = null
+      }
     }
-  }, [nodes, edges, width, height, onNodeClick])
+  }, [nodes, edges, height, onNodeClick])
   
-  // Drag function for nodes
-  function drag(simulation: d3.Simulation<any, undefined>) {
-    function dragstarted(event: any) {
-      if (!event.active) simulation.alphaTarget(0.3).restart()
-      event.subject.fx = event.subject.x
-      event.subject.fy = event.subject.y
-    }
-    
-    function dragged(event: any) {
-      event.subject.fx = event.x
-      event.subject.fy = event.y
-    }
-    
-    function dragended(event: any) {
-      if (!event.active) simulation.alphaTarget(0)
-      event.subject.fx = null
-      event.subject.fy = null
-    }
-    
-    return d3.drag()
-      .on('start', dragstarted)
-      .on('drag', dragged)
-      .on('end', dragended)
+  if (nodes.length === 0) {
+    return (
+      <div 
+        ref={containerRef} 
+        className="w-full" 
+        style={{ height: `${height}px` }}
+      >
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="text-4xl mb-4">🧠</div>
+            <h3 className="text-xl font-medium mb-2">No Knowledge Graph Data</h3>
+            <p className="text-neutral-400">
+              Start recording meetings to build your knowledge graph
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
   
   return (
-    <div className="w-full h-full">
-      {isLoading ? (
-        <div className="glass-panel p-6 text-center">
+    <div 
+      ref={containerRef} 
+      className="w-full" 
+      style={{ height: `${height}px` }}
+    >
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
           <div className="text-4xl mb-4">🧠</div>
           <h3 className="text-xl font-medium mb-2">Loading Knowledge Graph...</h3>
           <p className="text-neutral-400">
             Visualizing your organization's knowledge connections
           </p>
         </div>
-      ) : (
-        <div className="glass-panel p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium">Knowledge Graph</h3>
-            <div className="text-sm text-neutral-400">
-              {nodes.length} nodes • {edges.length} connections
-            </div>
-          </div>
-          <div ref={containerRef} className="w-full" style={{ height: `${height}px` }}>
-            {/* D3 will render the graph here */}
-          </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <div className="text-xs flex items-center">
-              <span className="inline-block w-3 h-3 rounded-full bg-indigo-600 mr-1"></span>
-              <span>Concept</span>
-            </div>
-            <div className="text-xs flex items-center">
-              <span className="inline-block w-3 h-3 rounded-full bg-emerald-600 mr-1"></span>
-              <span>Decision</span>
-            </div>
-            <div className="text-xs flex items-center">
-              <span className="inline-block w-3 h-3 rounded-full bg-amber-500 mr-1"></span>
-              <span>Technical</span>
-            </div>
-            <div className="text-xs flex items-center">
-              <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-1"></span>
-              <span>Milestone</span>
-            </div>
-            <div className="text-xs flex items-center">
-              <span className="inline-block w-3 h-3 rounded-full bg-purple-500 mr-1"></span>
-              <span>Relationship</span>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }
