@@ -19,10 +19,12 @@ const upload = multer({
  * @desc    Upload audio file and start processing
  * @access  Private
  */
-router.post('/upload', upload.single('audio'), async (req, res) => {
+router.post('/upload', upload.single('audio'), async (req, res, next) => {
   try {
+    const { ValidationError } = require('../middleware/errorHandler');
+    
     if (!req.file) {
-      return res.status(400).json({ error: 'No audio file provided' });
+      throw new ValidationError('No audio file provided', { audio: 'Audio file is required' });
     }
     
     const audioBuffer = req.file.buffer;
@@ -38,8 +40,7 @@ router.post('/upload', upload.single('audio'), async (req, res) => {
     const result = await processAudio(audioBuffer, metadata);
     res.status(200).json({ message: 'Audio processed successfully', result });
   } catch (error) {
-    console.error('Error processing audio:', error);
-    res.status(500).json({ error: 'Failed to process audio' });
+    next(error); // Pass error to error handling middleware
   }
 });
 
@@ -48,10 +49,12 @@ router.post('/upload', upload.single('audio'), async (req, res) => {
  * @desc    Process audio from browser recording
  * @access  Private
  */
-router.post('/browser-recording', upload.single('audio'), async (req, res) => {
+router.post('/browser-recording', upload.single('audio'), async (req, res, next) => {
   try {
+    const { ValidationError } = require('../middleware/errorHandler');
+    
     if (!req.file) {
-      return res.status(400).json({ error: 'No audio file provided' });
+      throw new ValidationError('No audio file provided', { audio: 'Audio file is required' });
     }
     
     const audioBuffer = req.file.buffer;
@@ -66,8 +69,7 @@ router.post('/browser-recording', upload.single('audio'), async (req, res) => {
     const result = await processBrowserRecording(audioBuffer, metadata);
     res.status(200).json({ message: 'Browser recording processed successfully', result });
   } catch (error) {
-    console.error('Error processing browser recording:', error);
-    res.status(500).json({ error: 'Failed to process browser recording' });
+    next(error); // Pass error to error handling middleware
   }
 });
 
@@ -76,20 +78,25 @@ router.post('/browser-recording', upload.single('audio'), async (req, res) => {
  * @desc    Process audio from external meeting platform (zoom, teams, meet)
  * @access  Private
  */
-router.post('/external/:platform', async (req, res) => {
+router.post('/external/:platform', async (req, res, next) => {
   try {
+    const { ValidationError } = require('../middleware/errorHandler');
     const { platform } = req.params;
     const meetingData = req.body;
     
     if (!meetingData) {
-      return res.status(400).json({ error: 'No meeting data provided' });
+      throw new ValidationError('No meeting data provided', { meetingData: 'Meeting data is required' });
+    }
+    
+    // Validate platform
+    if (!['zoom', 'teams', 'googleMeet'].includes(platform)) {
+      throw new ValidationError('Invalid platform', { platform: 'Platform must be one of: zoom, teams, googleMeet' });
     }
     
     const result = await processExternalMeeting(meetingData, platform, req.user.id);
     res.status(200).json({ message: `${platform} meeting processed successfully`, result });
   } catch (error) {
-    console.error(`Error processing ${req.params.platform} meeting:`, error);
-    res.status(500).json({ error: `Failed to process ${req.params.platform} meeting` });
+    next(error); // Pass error to error handling middleware
   }
 });
 
@@ -98,8 +105,9 @@ router.post('/external/:platform', async (req, res) => {
  * @desc    Check audio processing status
  * @access  Private
  */
-router.get('/status/:meetingId', async (req, res) => {
+router.get('/status/:meetingId', async (req, res, next) => {
   try {
+    const { NotFoundError } = require('../middleware/errorHandler');
     const { Meeting, Transcript } = require('../models');
     
     const meeting = await Meeting.findOne({
@@ -113,7 +121,7 @@ router.get('/status/:meetingId', async (req, res) => {
     });
     
     if (!meeting) {
-      return res.status(404).json({ error: 'Meeting not found' });
+      throw new NotFoundError('Meeting not found');
     }
     
     res.status(200).json({
@@ -123,8 +131,7 @@ router.get('/status/:meetingId', async (req, res) => {
       error: meeting.transcript && meeting.transcript.processingError ? meeting.transcript.processingError : null
     });
   } catch (error) {
-    console.error('Error checking audio processing status:', error);
-    res.status(500).json({ error: 'Failed to check audio processing status' });
+    next(error); // Pass error to error handling middleware
   }
 });
 

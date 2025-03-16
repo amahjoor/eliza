@@ -12,20 +12,20 @@ router.use(authenticateToken);
  * @desc    Search across all content types
  * @access  Private
  */
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
+    const { ValidationError } = require('../middleware/errorHandler');
     const { query, filters } = req.query;
     
     if (!query) {
-      return res.status(400).json({ error: 'Search query is required' });
+      throw new ValidationError('Search query is required', { query: 'Search query cannot be empty' });
     }
     
     const results = await searchAll(query, filters, req.user.id);
     
     res.status(200).json(results);
   } catch (error) {
-    console.error('Error searching content:', error);
-    res.status(500).json({ error: 'Failed to search content' });
+    next(error); // Pass error to error handling middleware
   }
 });
 

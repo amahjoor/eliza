@@ -4,20 +4,27 @@ const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const router = express.Router();
 
+// Import error classes
+const { AuthenticationError } = require('../middleware/errorHandler');
+
 // Middleware to verify token
 const verifyToken = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  
-  if (!token) {
-    return res.status(403).json({ message: 'No token provided' });
-  }
-  
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.id;
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    const token = req.headers['authorization']?.split(' ')[1];
+    
+    if (!token) {
+      throw new AuthenticationError('No token provided');
+    }
+    
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.userId = decoded.id;
+      next();
+    } catch (err) {
+      throw new AuthenticationError('Invalid or expired token');
+    }
+  } catch (error) {
+    next(error);
   }
 };
 

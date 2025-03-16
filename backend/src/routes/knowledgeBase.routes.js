@@ -13,7 +13,7 @@ router.use(authenticateToken);
  * @desc    Get all knowledge base entries
  * @access  Private
  */
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
     const knowledgeBaseEntries = await KnowledgeBase.findAll({
       where: { userId: req.user.id },
@@ -22,8 +22,7 @@ router.get('/', async (req, res) => {
     
     res.status(200).json(knowledgeBaseEntries);
   } catch (error) {
-    console.error('Error fetching knowledge base entries:', error);
-    res.status(500).json({ error: 'Failed to fetch knowledge base entries' });
+    next(error); // Pass error to error handling middleware
   }
 });
 

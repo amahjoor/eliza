@@ -78,14 +78,11 @@ io.on('connection', (socket) => {
   });
 });
 
+// Import error handler middleware
+const { errorHandler } = require('./middleware/errorHandler');
+
 // Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: true,
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal Server Error'
-  });
-});
+app.use(errorHandler);
 
 // Handle 404 routes
 app.use((req, res) => {
