@@ -1,10 +1,10 @@
 import { OpenAI } from 'openai';
 import { 
   InsightGenerationOptions, 
-  GeneratedInsight,
-  PersonInsight,
-  ProjectInsight,
-  MeetingInsight
+  PersonInsight, 
+  ProjectInsight, 
+  MeetingInsight,
+  Insight
 } from '../../types/ai';
 
 // Initialize OpenAI client
@@ -13,31 +13,53 @@ const openai = new OpenAI({
 });
 
 /**
- * Generates insights for a specific person
- * @param personId ID of the person to generate insights for
+ * Generates insights about a person based on their meeting participation
+ * @param personId ID of the person
  * @param options Options for insight generation
- * @returns Generated insights for the person
+ * @returns Generated insights about the person
  */
 export async function generatePersonInsights(
   personId: string,
-  options: InsightGenerationOptions
+  options: InsightGenerationOptions = {}
 ): Promise<PersonInsight> {
   try {
-    // Fetch person data
-    const person = await fetchPersonData(personId);
+    // Set default options
+    const defaultOptions: InsightGenerationOptions = {
+      depth: 'detailed'
+    };
     
-    if (!person) {
-      throw new Error(`Person with ID ${personId} not found`);
-    }
+    // Merge default options with provided options
+    const mergedOptions = { ...defaultOptions, ...options };
     
-    // Fetch related meetings
-    const meetings = await fetchPersonMeetings(personId, options.timeframe);
+    // In a real implementation, we would fetch person data from the database
+    // For now, we'll use mock data
+    const person = {
+      id: personId,
+      name: 'Alice Smith',
+      role: 'Frontend Developer',
+      meetings: [
+        { 
+          id: 'meeting-1',
+          title: 'Project Planning Meeting',
+          date: new Date('2023-01-15')
+        },
+        { 
+          id: 'meeting-2',
+          title: 'Frontend Architecture Discussion',
+          date: new Date('2023-01-20')
+        }
+      ]
+    };
     
     // Generate system prompt
-    const systemPrompt = generatePersonInsightPrompt(options);
+    const systemPrompt = generatePersonInsightPrompt(person, mergedOptions);
     
-    // Generate user prompt with person and meeting data
-    const userPrompt = generatePersonDataPrompt(person, meetings);
+    // Generate user prompt with person data
+    const userPrompt = `Please analyze the following data about ${person.name} and generate insights:
+
+Role: ${person.role}
+Meetings attended: ${person.meetings.length}
+Recent meeting topics: ${person.meetings.map(m => m.title).join(', ')}`;
     
     // Call OpenAI API to generate insights
     const completion = await openai.chat.completions.create({
@@ -46,24 +68,27 @@ export async function generatePersonInsights(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 0.4,
-      max_tokens: 3000,
+      temperature: 0.3,
+      max_tokens: 2000,
     });
     
     // Parse the response
     const content = completion.choices[0]?.message?.content || '';
     
     // Extract insights from the generated content
-    const insights = parseGeneratedInsights(content);
+    const insights = parseInsights(content);
     
-    // Generate a summary of the person's participation and contributions
-    const summary = generatePersonSummary(person, meetings, insights);
-    
-    return {
+    // Create the person insight object
+    const personInsight: PersonInsight = {
       personId,
-      personName: person.name,
-      insights
+      insights,
+      metadata: {
+        generatedAt: new Date(),
+        options: mergedOptions
+      }
     };
+    
+    return personInsight;
   } catch (error) {
     console.error('Error generating person insights:', error);
     throw new Error('Failed to generate person insights');
@@ -71,31 +96,58 @@ export async function generatePersonInsights(
 }
 
 /**
- * Generates insights for a specific project
- * @param projectId ID of the project to generate insights for
+ * Generates insights about a project based on related meetings
+ * @param projectId ID of the project
  * @param options Options for insight generation
- * @returns Generated insights for the project
+ * @returns Generated insights about the project
  */
 export async function generateProjectInsights(
   projectId: string,
-  options: InsightGenerationOptions
+  options: InsightGenerationOptions = {}
 ): Promise<ProjectInsight> {
   try {
-    // Fetch project data
-    const project = await fetchProjectData(projectId);
+    // Set default options
+    const defaultOptions: InsightGenerationOptions = {
+      depth: 'detailed'
+    };
     
-    if (!project) {
-      throw new Error(`Project with ID ${projectId} not found`);
-    }
+    // Merge default options with provided options
+    const mergedOptions = { ...defaultOptions, ...options };
     
-    // Fetch related meetings
-    const meetings = await fetchProjectMeetings(projectId, options.timeframe);
+    // In a real implementation, we would fetch project data from the database
+    // For now, we'll use mock data
+    const project = {
+      id: projectId,
+      name: 'Eliza AI Assistant',
+      description: 'An AI-powered meeting assistant that helps with note-taking and knowledge management',
+      meetings: [
+        { 
+          id: 'meeting-1',
+          title: 'Project Planning Meeting',
+          date: new Date('2023-01-15')
+        },
+        { 
+          id: 'meeting-2',
+          title: 'Frontend Architecture Discussion',
+          date: new Date('2023-01-20')
+        },
+        { 
+          id: 'meeting-3',
+          title: 'Backend API Design',
+          date: new Date('2023-01-25')
+        }
+      ]
+    };
     
     // Generate system prompt
-    const systemPrompt = generateProjectInsightPrompt(options);
+    const systemPrompt = generateProjectInsightPrompt(project, mergedOptions);
     
-    // Generate user prompt with project and meeting data
-    const userPrompt = generateProjectDataPrompt(project, meetings);
+    // Generate user prompt with project data
+    const userPrompt = `Please analyze the following data about the project "${project.name}" and generate insights:
+
+Project description: ${project.description}
+Number of meetings: ${project.meetings.length}
+Recent meeting topics: ${project.meetings.map(m => m.title).join(', ')}`;
     
     // Call OpenAI API to generate insights
     const completion = await openai.chat.completions.create({
@@ -104,24 +156,27 @@ export async function generateProjectInsights(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 0.4,
-      max_tokens: 3000,
+      temperature: 0.3,
+      max_tokens: 2000,
     });
     
     // Parse the response
     const content = completion.choices[0]?.message?.content || '';
     
     // Extract insights from the generated content
-    const insights = parseGeneratedInsights(content);
+    const insights = parseInsights(content);
     
-    // Generate a status summary for the project
-    const statusSummary = generateProjectStatusSummary(project, meetings, insights);
-    
-    return {
+    // Create the project insight object
+    const projectInsight: ProjectInsight = {
       projectId,
-      projectName: project.name,
-      insights
+      insights,
+      metadata: {
+        generatedAt: new Date(),
+        options: mergedOptions
+      }
     };
+    
+    return projectInsight;
   } catch (error) {
     console.error('Error generating project insights:', error);
     throw new Error('Failed to generate project insights');
@@ -129,35 +184,55 @@ export async function generateProjectInsights(
 }
 
 /**
- * Generates insights for a specific meeting
- * @param meetingId ID of the meeting to generate insights for
+ * Generates insights about a meeting based on its transcript and notes
+ * @param meetingId ID of the meeting
  * @param options Options for insight generation
- * @returns Generated insights for the meeting
+ * @returns Generated insights about the meeting
  */
 export async function generateMeetingInsights(
   meetingId: string,
-  options: InsightGenerationOptions
+  options: InsightGenerationOptions = {}
 ): Promise<MeetingInsight> {
   try {
-    // Fetch meeting data
-    const meeting = await fetchMeetingData(meetingId);
+    // Set default options
+    const defaultOptions: InsightGenerationOptions = {
+      depth: 'detailed'
+    };
     
-    if (!meeting) {
-      throw new Error(`Meeting with ID ${meetingId} not found`);
-    }
+    // Merge default options with provided options
+    const mergedOptions = { ...defaultOptions, ...options };
     
-    // Fetch transcript
-    const transcript = await fetchMeetingTranscript(meetingId);
-    
-    if (!transcript) {
-      throw new Error(`Transcript for meeting with ID ${meetingId} not found`);
-    }
+    // In a real implementation, we would fetch meeting data from the database
+    // For now, we'll use mock data
+    const meeting = {
+      id: meetingId,
+      title: 'Project Planning Meeting',
+      description: 'Discussion about project timeline and resource allocation',
+      transcript: 'This is a sample transcript content for testing purposes. ' +
+                 'The team discussed project timelines and resource allocation. ' +
+                 'Alice will handle the frontend development, and Bob will work on the backend. ' +
+                 'We need to complete the initial prototype by next Friday.',
+      attendees: [
+        { name: 'Alice Smith', role: 'Frontend Developer' },
+        { name: 'Bob Johnson', role: 'Backend Developer' },
+        { name: 'Charlie Brown', role: 'Project Manager' }
+      ],
+      project: { name: 'Eliza AI Assistant' }
+    };
     
     // Generate system prompt
-    const systemPrompt = generateMeetingInsightPrompt(options);
+    const systemPrompt = generateMeetingInsightPrompt(meeting, mergedOptions);
     
-    // Generate user prompt with meeting and transcript data
-    const userPrompt = generateMeetingDataPrompt(meeting, transcript);
+    // Generate user prompt with meeting data
+    const userPrompt = `Please analyze the following meeting data and generate insights:
+
+Meeting title: ${meeting.title}
+Meeting description: ${meeting.description}
+Project: ${meeting.project.name}
+Attendees: ${meeting.attendees.map(a => a.name).join(', ')}
+
+Transcript:
+${meeting.transcript}`;
     
     // Call OpenAI API to generate insights
     const completion = await openai.chat.completions.create({
@@ -166,24 +241,27 @@ export async function generateMeetingInsights(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 0.4,
-      max_tokens: 3000,
+      temperature: 0.3,
+      max_tokens: 2000,
     });
     
     // Parse the response
     const content = completion.choices[0]?.message?.content || '';
     
     // Extract insights from the generated content
-    const insights = parseGeneratedInsights(content);
+    const insights = parseInsights(content);
     
-    // Generate an assessment of the meeting
-    const assessment = generateMeetingAssessment(meeting, transcript, insights);
-    
-    return {
+    // Create the meeting insight object
+    const meetingInsight: MeetingInsight = {
       meetingId,
-      meetingTitle: meeting.title,
-      insights
+      insights,
+      metadata: {
+        generatedAt: new Date(),
+        options: mergedOptions
+      }
     };
+    
+    return meetingInsight;
   } catch (error) {
     console.error('Error generating meeting insights:', error);
     throw new Error('Failed to generate meeting insights');
@@ -191,465 +269,224 @@ export async function generateMeetingInsights(
 }
 
 /**
- * Fetches person data from the database
- * @param personId ID of the person to fetch
- * @returns Person object or null if not found
- */
-async function fetchPersonData(personId: string): Promise<any> {
-  // This would be replaced with actual database query
-  // For now, return a mock person
-  return {
-    id: personId,
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    role: 'Software Engineer',
-    organization: 'Acme Inc.',
-    projects: ['project-1', 'project-2'],
-    tags: ['engineering', 'frontend'],
-    notes: 'Experienced frontend developer',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  };
-}
-
-/**
- * Fetches meetings related to a person
- * @param personId ID of the person
- * @param timeframe Optional timeframe to filter meetings
- * @returns Array of meeting objects
- */
-async function fetchPersonMeetings(personId: string, timeframe?: { start: Date; end: Date }): Promise<any[]> {
-  // This would be replaced with actual database query
-  // For now, return mock meetings
-  return [
-    {
-      id: 'meeting-1',
-      title: 'Weekly Team Sync',
-      description: 'Regular team sync meeting',
-      startTime: new Date('2023-01-01T10:00:00Z'),
-      endTime: new Date('2023-01-01T11:00:00Z'),
-      participants: [personId, 'person-2', 'person-3'],
-      projectId: 'project-1',
-      status: 'completed',
-      createdBy: 'user-1',
-      createdAt: new Date('2022-12-30'),
-      updatedAt: new Date('2022-12-30')
-    },
-    {
-      id: 'meeting-2',
-      title: 'Project Planning',
-      description: 'Planning session for new project',
-      startTime: new Date('2023-01-03T14:00:00Z'),
-      endTime: new Date('2023-01-03T15:30:00Z'),
-      participants: [personId, 'person-4', 'person-5'],
-      projectId: 'project-2',
-      status: 'completed',
-      createdBy: 'user-1',
-      createdAt: new Date('2023-01-02'),
-      updatedAt: new Date('2023-01-02')
-    }
-  ];
-}
-
-/**
- * Fetches project data from the database
- * @param projectId ID of the project to fetch
- * @returns Project object or null if not found
- */
-async function fetchProjectData(projectId: string): Promise<any> {
-  // This would be replaced with actual database query
-  // For now, return a mock project
-  return {
-    id: projectId,
-    name: 'Website Redesign',
-    description: 'Redesign of the company website',
-    status: 'active',
-    members: ['person-1', 'person-2', 'person-3'],
-    tags: ['design', 'frontend', 'marketing'],
-    startDate: new Date('2023-01-01'),
-    endDate: new Date('2023-03-31'),
-    createdBy: 'user-1',
-    createdAt: new Date('2022-12-15'),
-    updatedAt: new Date('2022-12-15')
-  };
-}
-
-/**
- * Fetches meetings related to a project
- * @param projectId ID of the project
- * @param timeframe Optional timeframe to filter meetings
- * @returns Array of meeting objects
- */
-async function fetchProjectMeetings(projectId: string, timeframe?: { start: Date; end: Date }): Promise<any[]> {
-  // This would be replaced with actual database query
-  // For now, return mock meetings
-  return [
-    {
-      id: 'meeting-1',
-      title: 'Project Kickoff',
-      description: 'Initial kickoff meeting for the project',
-      startTime: new Date('2023-01-02T10:00:00Z'),
-      endTime: new Date('2023-01-02T11:30:00Z'),
-      participants: ['person-1', 'person-2', 'person-3'],
-      projectId,
-      status: 'completed',
-      createdBy: 'user-1',
-      createdAt: new Date('2022-12-30'),
-      updatedAt: new Date('2022-12-30')
-    },
-    {
-      id: 'meeting-2',
-      title: 'Design Review',
-      description: 'Review of initial design concepts',
-      startTime: new Date('2023-01-10T14:00:00Z'),
-      endTime: new Date('2023-01-10T15:00:00Z'),
-      participants: ['person-1', 'person-4', 'person-5'],
-      projectId,
-      status: 'completed',
-      createdBy: 'user-1',
-      createdAt: new Date('2023-01-08'),
-      updatedAt: new Date('2023-01-08')
-    }
-  ];
-}
-
-/**
- * Fetches meeting data from the database
- * @param meetingId ID of the meeting to fetch
- * @returns Meeting object or null if not found
- */
-async function fetchMeetingData(meetingId: string): Promise<any> {
-  // This would be replaced with actual database query
-  // For now, return a mock meeting
-  return {
-    id: meetingId,
-    title: 'Product Strategy Discussion',
-    description: 'Discussion about product roadmap and strategy',
-    startTime: new Date('2023-01-15T13:00:00Z'),
-    endTime: new Date('2023-01-15T14:30:00Z'),
-    participants: ['person-1', 'person-2', 'person-3'],
-    projectId: 'project-1',
-    status: 'completed',
-    createdBy: 'user-1',
-    createdAt: new Date('2023-01-10'),
-    updatedAt: new Date('2023-01-10')
-  };
-}
-
-/**
- * Fetches transcript for a meeting
- * @param meetingId ID of the meeting
- * @returns Transcript object or null if not found
- */
-async function fetchMeetingTranscript(meetingId: string): Promise<any> {
-  // This would be replaced with actual database query
-  // For now, return a mock transcript
-  return {
-    id: 'transcript-1',
-    meetingId,
-    content: 'This is a sample transcript content.',
-    segments: [
-      {
-        speakerId: 'person-1',
-        speakerName: 'John Doe',
-        text: 'Let\'s discuss the product roadmap for Q1.',
-        startTime: 0,
-        endTime: 5
-      },
-      {
-        speakerId: 'person-2',
-        speakerName: 'Jane Smith',
-        text: 'I think we should prioritize the new user onboarding flow.',
-        startTime: 6,
-        endTime: 10
-      },
-      {
-        speakerId: 'person-3',
-        speakerName: 'Bob Johnson',
-        text: 'I agree, and we should also consider improving the analytics dashboard.',
-        startTime: 11,
-        endTime: 15
-      }
-    ],
-    createdAt: new Date('2023-01-15'),
-    updatedAt: new Date('2023-01-15')
-  };
-}
-
-/**
  * Generates a system prompt for person insights
- * @param options Options for insight generation
+ * @param person Person data
+ * @param options Insight generation options
  * @returns System prompt for the AI
  */
-function generatePersonInsightPrompt(options: InsightGenerationOptions): string {
-  let detailLevel = '';
-  switch (options.depth) {
-    case 'basic':
-      detailLevel = 'basic';
-      break;
-    case 'detailed':
-      detailLevel = 'detailed';
-      break;
-    case 'comprehensive':
-      detailLevel = 'comprehensive';
-      break;
-    default:
-      detailLevel = 'detailed';
+function generatePersonInsightPrompt(person: any, options: InsightGenerationOptions): string {
+  // Determine depth description
+  let depthDesc = 'detailed';
+  if (options.depth === 'concise') {
+    depthDesc = 'concise';
+  } else if (options.depth === 'comprehensive') {
+    depthDesc = 'comprehensive';
   }
   
-  return `You are an expert at analyzing meeting data and generating insights about people. Your task is to provide ${detailLevel} insights about a person based on their participation in meetings. Focus on identifying patterns, contributions, areas of expertise, and potential growth opportunities. Format your response as a structured JSON with the following sections:
+  // Build the system prompt
+  let prompt = `You are an expert at analyzing meeting data and generating insights about people. Your task is to create ${depthDesc} insights about ${person.name} based on their meeting participation and contributions.
+
+For each insight, provide:
+1. A clear title
+2. The type of insight (observation, trend, recommendation, risk, opportunity)
+3. A detailed description
+4. A confidence score (0-100)
+5. Supporting evidence
+6. Relevant tags
+
+Format your response as a JSON array of insights. Focus on providing actionable, valuable insights that would help understand ${person.name}'s role, contributions, and potential areas for growth or recognition.`;
   
-1. "insights": An array of insight objects, each containing:
-   - "title": A concise title for the insight
-   - "description": A detailed description of the insight
-   - "type": The type of insight (trend, connection, recommendation, risk, opportunity)
-   - "confidence": A number between 0 and 100 indicating your confidence in this insight
-   - "supportingEvidence": Array of evidence that supports this insight, with source references
-
-2. "summary": A brief summary of the person's participation and contributions
-
-Be specific, data-driven, and actionable in your insights.`;
+  // Add instructions for focus areas if provided
+  if (options.focusAreas && options.focusAreas.length > 0) {
+    prompt += `\n\nFocus particularly on these areas: ${options.focusAreas.join(', ')}.`;
+  }
+  
+  // Add instructions for timeframe if provided
+  if (options.timeframe) {
+    const startDate = options.timeframe.startDate ? options.timeframe.startDate.toISOString().split('T')[0] : 'any time';
+    const endDate = options.timeframe.endDate ? options.timeframe.endDate.toISOString().split('T')[0] : 'present';
+    prompt += `\n\nFocus on the timeframe from ${startDate} to ${endDate}.`;
+  }
+  
+  return prompt;
 }
 
 /**
  * Generates a system prompt for project insights
- * @param options Options for insight generation
+ * @param project Project data
+ * @param options Insight generation options
  * @returns System prompt for the AI
  */
-function generateProjectInsightPrompt(options: InsightGenerationOptions): string {
-  let detailLevel = '';
-  switch (options.depth) {
-    case 'basic':
-      detailLevel = 'basic';
-      break;
-    case 'detailed':
-      detailLevel = 'detailed';
-      break;
-    case 'comprehensive':
-      detailLevel = 'comprehensive';
-      break;
-    default:
-      detailLevel = 'detailed';
+function generateProjectInsightPrompt(project: any, options: InsightGenerationOptions): string {
+  // Determine depth description
+  let depthDesc = 'detailed';
+  if (options.depth === 'concise') {
+    depthDesc = 'concise';
+  } else if (options.depth === 'comprehensive') {
+    depthDesc = 'comprehensive';
   }
   
-  return `You are an expert at analyzing meeting data and generating insights about projects. Your task is to provide ${detailLevel} insights about a project based on related meetings. Focus on identifying progress, blockers, risks, decisions made, and action items. Format your response as a structured JSON with the following sections:
+  // Build the system prompt
+  let prompt = `You are an expert at analyzing meeting data and generating insights about projects. Your task is to create ${depthDesc} insights about the project "${project.name}" based on related meetings and discussions.
+
+For each insight, provide:
+1. A clear title
+2. The type of insight (observation, trend, recommendation, risk, opportunity)
+3. A detailed description
+4. A confidence score (0-100)
+5. Supporting evidence
+6. Relevant tags
+
+Format your response as a JSON array of insights. Focus on providing actionable, valuable insights that would help understand the project's progress, challenges, and opportunities.`;
   
-1. "insights": An array of insight objects, each containing:
-   - "title": A concise title for the insight
-   - "description": A detailed description of the insight
-   - "type": The type of insight (trend, connection, recommendation, risk, opportunity)
-   - "confidence": A number between 0 and 100 indicating your confidence in this insight
-   - "supportingEvidence": Array of evidence that supports this insight, with source references
-
-2. "statusSummary": A brief summary of the project's current status
-
-Be specific, data-driven, and actionable in your insights.`;
+  // Add instructions for focus areas if provided
+  if (options.focusAreas && options.focusAreas.length > 0) {
+    prompt += `\n\nFocus particularly on these areas: ${options.focusAreas.join(', ')}.`;
+  }
+  
+  // Add instructions for timeframe if provided
+  if (options.timeframe) {
+    const startDate = options.timeframe.startDate ? options.timeframe.startDate.toISOString().split('T')[0] : 'any time';
+    const endDate = options.timeframe.endDate ? options.timeframe.endDate.toISOString().split('T')[0] : 'present';
+    prompt += `\n\nFocus on the timeframe from ${startDate} to ${endDate}.`;
+  }
+  
+  return prompt;
 }
 
 /**
  * Generates a system prompt for meeting insights
- * @param options Options for insight generation
+ * @param meeting Meeting data
+ * @param options Insight generation options
  * @returns System prompt for the AI
  */
-function generateMeetingInsightPrompt(options: InsightGenerationOptions): string {
-  let detailLevel = '';
-  switch (options.depth) {
-    case 'basic':
-      detailLevel = 'basic';
-      break;
-    case 'detailed':
-      detailLevel = 'detailed';
-      break;
-    case 'comprehensive':
-      detailLevel = 'comprehensive';
-      break;
-    default:
-      detailLevel = 'detailed';
+function generateMeetingInsightPrompt(meeting: any, options: InsightGenerationOptions): string {
+  // Determine depth description
+  let depthDesc = 'detailed';
+  if (options.depth === 'concise') {
+    depthDesc = 'concise';
+  } else if (options.depth === 'comprehensive') {
+    depthDesc = 'comprehensive';
   }
   
-  return `You are an expert at analyzing meeting transcripts and generating insights. Your task is to provide ${detailLevel} insights about a meeting based on its transcript. Focus on identifying key topics discussed, decisions made, action items, and participant dynamics. Format your response as a structured JSON with the following sections:
-  
-1. "insights": An array of insight objects, each containing:
-   - "title": A concise title for the insight
-   - "description": A detailed description of the insight
-   - "type": The type of insight (trend, connection, recommendation, risk, opportunity)
-   - "confidence": A number between 0 and 100 indicating your confidence in this insight
-   - "supportingEvidence": Array of evidence that supports this insight, with source references
+  // Build the system prompt
+  let prompt = `You are an expert at analyzing meeting transcripts and generating insights. Your task is to create ${depthDesc} insights about the meeting titled "${meeting.title}" based on the transcript I will provide.
 
-2. "assessment": A brief assessment of the meeting's effectiveness and outcomes
+For each insight, provide:
+1. A clear title
+2. The type of insight (observation, trend, recommendation, risk, opportunity)
+3. A detailed description
+4. A confidence score (0-100)
+5. Supporting evidence
+6. Relevant tags
 
-Be specific, data-driven, and actionable in your insights.`;
-}
-
-/**
- * Generates a user prompt with person and meeting data
- * @param person Person object
- * @param meetings Array of meeting objects
- * @returns User prompt for the AI
- */
-function generatePersonDataPrompt(person: any, meetings: any[]): string {
-  let userPrompt = `Person Information:\n`;
-  userPrompt += `Name: ${person.name}\n`;
-  userPrompt += `Role: ${person.role}\n`;
-  userPrompt += `Organization: ${person.organization}\n`;
-  userPrompt += `Tags: ${person.tags.join(', ')}\n\n`;
+Format your response as a JSON array of insights. Focus on providing actionable, valuable insights that would help understand the key points, decisions, action items, and underlying themes of the meeting.`;
   
-  userPrompt += `Meeting Participation:\n`;
-  
-  meetings.forEach((meeting, index) => {
-    userPrompt += `Meeting ${index + 1}: ${meeting.title}\n`;
-    userPrompt += `Date: ${meeting.startTime.toISOString()}\n`;
-    userPrompt += `Description: ${meeting.description}\n`;
-    userPrompt += `Project: ${meeting.projectId}\n\n`;
-  });
-  
-  return userPrompt;
-}
-
-/**
- * Generates a user prompt with project and meeting data
- * @param project Project object
- * @param meetings Array of meeting objects
- * @returns User prompt for the AI
- */
-function generateProjectDataPrompt(project: any, meetings: any[]): string {
-  let userPrompt = `Project Information:\n`;
-  userPrompt += `Name: ${project.name}\n`;
-  userPrompt += `Description: ${project.description}\n`;
-  userPrompt += `Status: ${project.status}\n`;
-  userPrompt += `Start Date: ${project.startDate.toISOString()}\n`;
-  userPrompt += `End Date: ${project.endDate ? project.endDate.toISOString() : 'Not set'}\n`;
-  userPrompt += `Tags: ${project.tags.join(', ')}\n\n`;
-  
-  userPrompt += `Project Meetings:\n`;
-  
-  meetings.forEach((meeting, index) => {
-    userPrompt += `Meeting ${index + 1}: ${meeting.title}\n`;
-    userPrompt += `Date: ${meeting.startTime.toISOString()}\n`;
-    userPrompt += `Description: ${meeting.description}\n`;
-    userPrompt += `Participants: ${meeting.participants.length} people\n\n`;
-  });
-  
-  return userPrompt;
-}
-
-/**
- * Generates a user prompt with meeting and transcript data
- * @param meeting Meeting object
- * @param transcript Transcript object
- * @returns User prompt for the AI
- */
-function generateMeetingDataPrompt(meeting: any, transcript: any): string {
-  let userPrompt = `Meeting Information:\n`;
-  userPrompt += `Title: ${meeting.title}\n`;
-  userPrompt += `Description: ${meeting.description}\n`;
-  userPrompt += `Date: ${meeting.startTime.toISOString()}\n`;
-  userPrompt += `Duration: ${(meeting.endTime.getTime() - meeting.startTime.getTime()) / (1000 * 60)} minutes\n`;
-  userPrompt += `Participants: ${meeting.participants.length} people\n\n`;
-  
-  userPrompt += `Meeting Transcript:\n`;
-  
-  if (transcript.segments && transcript.segments.length > 0) {
-    transcript.segments.forEach((segment: any) => {
-      userPrompt += `${segment.speakerName}: ${segment.text}\n`;
-    });
-  } else {
-    userPrompt += transcript.content;
+  // Add instructions for focus areas if provided
+  if (options.focusAreas && options.focusAreas.length > 0) {
+    prompt += `\n\nFocus particularly on these areas: ${options.focusAreas.join(', ')}.`;
   }
   
-  return userPrompt;
+  return prompt;
 }
 
 /**
- * Parses the generated content into insights
+ * Parses insights from the generated content
  * @param content Generated content from the AI
  * @returns Array of parsed insights
  */
-function parseGeneratedInsights(content: string): GeneratedInsight[] {
+function parseInsights(content: string): Insight[] {
   try {
     // Try to parse the content as JSON
     const parsedContent = JSON.parse(content);
     
-    if (Array.isArray(parsedContent.insights)) {
-      return parsedContent.insights.map((insight: any) => ({
-        id: `insight-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        title: insight.title,
-        description: insight.description,
-        type: insight.type,
-        confidence: insight.confidence,
-        relatedEntities: insight.relatedEntities || [],
-        supportingEvidence: insight.supportingEvidence || [],
-        createdAt: new Date()
+    if (Array.isArray(parsedContent)) {
+      return parsedContent.map(item => ({
+        type: item.type as 'observation' | 'trend' | 'recommendation' | 'risk' | 'opportunity',
+        title: item.title,
+        description: item.description,
+        confidence: item.confidence,
+        evidence: Array.isArray(item.evidence) ? item.evidence : [item.evidence],
+        tags: item.tags,
+        relatedEntities: item.relatedEntities
       }));
     }
     
-    return [];
+    // If the content is not an array, try to extract insights from the text
+    return extractInsightsFromText(content);
   } catch (error) {
-    console.error('Error parsing generated insights:', error);
+    console.error('Error parsing insights:', error);
     
-    // If JSON parsing fails, try to extract insights manually
-    const insights: GeneratedInsight[] = [];
-    
-    // Simple regex-based extraction (this is a fallback and not ideal)
-    const insightMatches = content.match(/##\s+(.+?)\n([\s\S]*?)(?=##|$)/g);
-    
-    if (insightMatches) {
-      insightMatches.forEach((match, index) => {
-        const titleMatch = match.match(/##\s+(.+)/);
-        const title = titleMatch ? titleMatch[1] : `Insight ${index + 1}`;
-        
-        insights.push({
-          id: `insight-${Date.now()}-${index}`,
-          title,
-          description: match.replace(/##\s+.+\n/, '').trim(),
-          type: 'recommendation',
-          confidence: 70,
-          relatedEntities: [],
-          supportingEvidence: [],
-          createdAt: new Date()
-        });
-      });
-    }
-    
-    return insights;
+    // If JSON parsing fails, try to extract insights from the text
+    return extractInsightsFromText(content);
   }
 }
 
 /**
- * Generates a summary of a person's participation and contributions
- * @param person Person object
- * @param meetings Array of meeting objects
- * @param insights Array of generated insights
- * @returns Summary text
+ * Extracts insights from text when JSON parsing fails
+ * @param content Text content
+ * @returns Array of extracted insights
  */
-function generatePersonSummary(person: any, meetings: any[], insights: GeneratedInsight[]): string {
-  // This would be a more sophisticated function in a real implementation
-  // For now, return a simple summary
-  return `${person.name} has participated in ${meetings.length} meetings. Based on the analysis, they have shown expertise in their role as ${person.role} and have contributed valuable insights related to ${person.tags.join(', ')}.`;
-}
-
-/**
- * Generates a status summary for a project
- * @param project Project object
- * @param meetings Array of meeting objects
- * @param insights Array of generated insights
- * @returns Status summary text
- */
-function generateProjectStatusSummary(project: any, meetings: any[], insights: GeneratedInsight[]): string {
-  // This would be a more sophisticated function in a real implementation
-  // For now, return a simple summary
-  return `The ${project.name} project is currently ${project.status}. There have been ${meetings.length} meetings related to this project. The project is focused on ${project.tags.join(', ')} and involves ${project.members.length} team members.`;
-}
-
-/**
- * Generates an assessment of a meeting
- * @param meeting Meeting object
- * @param transcript Transcript object
- * @param insights Array of generated insights
- * @returns Assessment text
- */
-function generateMeetingAssessment(meeting: any, transcript: any, insights: GeneratedInsight[]): string {
-  // This would be a more sophisticated function in a real implementation
-  // For now, return a simple assessment
-  return `The ${meeting.title} meeting lasted ${(meeting.endTime.getTime() - meeting.startTime.getTime()) / (1000 * 60)} minutes and involved ${meeting.participants.length} participants. The discussion was focused on the meeting's stated purpose and resulted in several actionable insights.`;
+function extractInsightsFromText(content: string): Insight[] {
+  const insights: Insight[] = [];
+  
+  // Try to extract insights using regex patterns
+  const insightBlocks = content.split(/(?=##\s+Insight|#\s+Insight|\d+\.\s+Insight)/);
+  
+  for (const block of insightBlocks) {
+    if (!block.trim()) continue;
+    
+    // Extract title
+    const titleMatch = block.match(/(?:##\s+|#\s+|\d+\.\s+)?(?:Insight:?\s+)?(.+?)(?:\n|$)/);
+    const title = titleMatch ? titleMatch[1].trim() : 'Untitled Insight';
+    
+    // Extract type
+    const typeMatch = block.match(/Type:?\s+(\w+)/i);
+    const type = typeMatch ? 
+      typeMatch[1].toLowerCase() as 'observation' | 'trend' | 'recommendation' | 'risk' | 'opportunity' : 
+      'observation';
+    
+    // Extract description
+    const descriptionMatch = block.match(/Description:?\s+(.+?)(?=\n\s*(?:Confidence|Evidence|Tags|$))/is);
+    const description = descriptionMatch ? descriptionMatch[1].trim() : '';
+    
+    // Extract confidence
+    const confidenceMatch = block.match(/Confidence:?\s+(\d+)/i);
+    const confidence = confidenceMatch ? parseInt(confidenceMatch[1]) : 75;
+    
+    // Extract evidence
+    const evidenceMatch = block.match(/Evidence:?\s+(.+?)(?=\n\s*(?:Tags|$))/is);
+    const evidence = evidenceMatch ? 
+      evidenceMatch[1].split(/\n\s*[-*]\s+/).filter(e => e.trim()) : 
+      ['Based on meeting transcript'];
+    
+    // Extract tags
+    const tagsMatch = block.match(/Tags:?\s+(.+?)(?=\n|$)/i);
+    const tags = tagsMatch ? 
+      tagsMatch[1].split(/,\s*/).map(tag => tag.trim()) : 
+      [];
+    
+    insights.push({
+      type,
+      title,
+      description,
+      confidence,
+      evidence,
+      tags
+    });
+  }
+  
+  // If no insights were extracted, create a default one
+  if (insights.length === 0) {
+    insights.push({
+      type: 'observation',
+      title: 'General Meeting Insight',
+      description: 'This is an automatically generated insight based on the meeting transcript.',
+      confidence: 70,
+      evidence: ['Based on meeting transcript'],
+      tags: ['meeting', 'general']
+    });
+  }
+  
+  return insights;
 }
