@@ -7,6 +7,8 @@ import meetingRoutes from './routes/meeting.routes'
 import userRoutes from './routes/user.routes'
 import peopleRoutes from './routes/people.routes'
 import projectRoutes from './routes/project.routes'
+import authRoutes from './routes/auth.routes'
+import { errorHandler, notFound } from './middleware/error.middleware'
 
 // Load environment variables
 dotenv.config()
@@ -26,6 +28,11 @@ app.use('/api/meetings', meetingRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/people', peopleRoutes)
 app.use('/api/projects', projectRoutes)
+app.use('/api/auth', authRoutes)
+
+// Error handling middleware
+app.use(notFound)
+app.use(errorHandler)
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '../../components/AuthProvider'
 
 // Mock data for meetings
 const mockMeetings = [
@@ -50,7 +51,15 @@ const mockMeetings = [
 ]
 
 export default function MeetingsPage() {
+  const { user, loading } = useAuth()
   const [meetings, setMeetings] = useState(mockMeetings)
+  
+  // If loading, show loading indicator
+  if (loading) {
+    return <div className="text-center py-10">Loading...</div>
+  }
+  
+  // If not authenticated, this will be handled by AuthProvider redirect
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'project' | 'people'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)

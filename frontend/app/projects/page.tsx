@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '../../components/AuthProvider'
 
 // Mock data for projects
 const mockProjects = [
@@ -61,7 +62,15 @@ const mockProjects = [
 ]
 
 export default function ProjectsPage() {
+  const { user, loading } = useAuth()
   const [projects, setProjects] = useState(mockProjects)
+  
+  // If loading, show loading indicator
+  if (loading) {
+    return <div className="text-center py-10">Loading...</div>
+  }
+  
+  // If not authenticated, this will be handled by AuthProvider redirect
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   

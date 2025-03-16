@@ -3,11 +3,20 @@
 import React, { useState } from 'react'
 import RecordingInterface from '../../components/RecordingInterface'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '../../components/AuthProvider'
 
 export default function RecordPage() {
   const router = useRouter()
+  const { user, loading } = useAuth()
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  
+  // If loading, show loading indicator
+  if (loading) {
+    return <div className="text-center py-10">Loading...</div>
+  }
+  
+  // If not authenticated, this will be handled by AuthProvider redirect
   
   const handleRecordingComplete = async (audioBlob: Blob) => {
     try {

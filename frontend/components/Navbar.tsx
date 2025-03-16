@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { useAuth } from './AuthProvider'
 
 const Navbar = () => {
   const pathname = usePathname()
+  const { user, logout, isAuthenticated } = useAuth()
   const [activeTab, setActiveTab] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
 
@@ -63,14 +65,20 @@ const Navbar = () => {
 
           {/* User Profile */}
           <div className="relative">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neutral-800 focus:ring-white"
-            >
-              <div className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center">
-                <span className="text-white">👤</span>
-              </div>
-            </button>
+            {isAuthenticated ? (
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neutral-800 focus:ring-white"
+              >
+                <div className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center">
+                  <span className="text-white">{user?.firstName?.charAt(0) || '👤'}</span>
+                </div>
+              </button>
+            ) : (
+              <Link href="/login" className="text-sm font-medium text-neutral-300 hover:text-white">
+                Sign In
+              </Link>
+            )}
 
             {/* Dropdown Menu */}
             {showDropdown && (
@@ -86,7 +94,7 @@ const Navbar = () => {
                 <button
                   className="block w-full text-left px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-700"
                   onClick={() => {
-                    // Handle logout
+                    logout()
                     setShowDropdown(false)
                   }}
                 >
