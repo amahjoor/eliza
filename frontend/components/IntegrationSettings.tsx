@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
+// Import toast from react-hot-toast once it's installed
+// For now, let's create a simple toast implementation
+const toast = {
+  success: (message: string) => console.log(`Success: ${message}`),
+  error: (message: string) => console.error(`Error: ${message}`)
+};
 
 interface IntegrationProps {
   name: string;
