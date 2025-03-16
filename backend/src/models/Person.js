@@ -77,7 +77,7 @@ const Person = sequelize.define('Person', {
     defaultValue: [],
     comment: 'Custom tags for categorizing the person'
   },
-  projects: {
+  projectIds: {
     type: DataTypes.ARRAY(DataTypes.UUID),
     allowNull: true,
     defaultValue: [],

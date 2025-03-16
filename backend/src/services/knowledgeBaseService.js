@@ -1,12 +1,11 @@
 const { Op } = require('sequelize');
 const { KnowledgeBase, Meeting, MeetingNote, Transcript, Person } = require('../models');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 
 // Configure OpenAI
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
 /**
  * Search knowledge base for entries matching query
@@ -296,7 +295,7 @@ const generateInsights = async (topic, timeframe = 'month', userId) => {
       }
     `;
     
-    const completion = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         { role: "system", content: "You are an AI assistant that analyzes meeting data and knowledge base entries to generate insights." },
@@ -306,7 +305,7 @@ const generateInsights = async (topic, timeframe = 'month', userId) => {
     });
     
     // Parse and return insights
-    const insights = JSON.parse(completion.data.choices[0].message.content);
+    const insights = JSON.parse(completion.choices[0].message.content);
     
     return {
       topic: topic || 'All Topics',
