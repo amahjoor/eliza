@@ -1,11 +1,19 @@
 import express from 'express'
 import { Meeting, MeetingNote, Transcript, Person } from '../models'
 import { generateMeetingNotes } from '../services/ai.service'
+import { 
+  TypedRequest, 
+  TypedResponse, 
+  MeetingRequestBody, 
+  MeetingUpdateBody,
+  MeetingQueryParams,
+  GenerateNotesBody
+} from '../types'
 
 const router = express.Router()
 
 // Get all meetings
-router.get('/', async (req, res) => {
+router.get('/', async (req: TypedRequest<{}, MeetingQueryParams>, res: TypedResponse) => {
   try {
     const { userId, projectId, limit = 20, offset = 0 } = req.query
     
@@ -42,7 +50,7 @@ router.get('/', async (req, res) => {
 })
 
 // Get meeting by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: express.Request, res: express.Response) => {
   try {
     const { id } = req.params
     
@@ -69,7 +77,7 @@ router.get('/:id', async (req, res) => {
 })
 
 // Create a new meeting
-router.post('/', async (req, res) => {
+router.post('/', async (req: TypedRequest<MeetingRequestBody>, res: TypedResponse) => {
   try {
     const { name, startTime, recordingType, userId, projectId, attendeeIds } = req.body
     
@@ -98,7 +106,7 @@ router.post('/', async (req, res) => {
 })
 
 // Update a meeting
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: TypedRequest<MeetingUpdateBody>, res: TypedResponse) => {
   try {
     const { id } = req.params
     const { name, endTime, status, projectId, attendeeIds } = req.body
@@ -112,7 +120,7 @@ router.put('/:id', async (req, res) => {
     // Update meeting fields
     if (name) meeting.name = name
     if (endTime) meeting.endTime = endTime
-    if (status) meeting.status = status
+    if (status) meeting.status = status as 'recording' | 'processing' | 'completed' | 'failed'
     if (projectId !== undefined) meeting.projectId = projectId
     
     await meeting.save()
@@ -133,7 +141,7 @@ router.put('/:id', async (req, res) => {
 })
 
 // Get meeting transcript
-router.get('/:id/transcript', async (req, res) => {
+router.get('/:id/transcript', async (req: express.Request, res: express.Response) => {
   try {
     const { id } = req.params
     
@@ -154,7 +162,7 @@ router.get('/:id/transcript', async (req, res) => {
 })
 
 // Get meeting notes
-router.get('/:id/notes', async (req, res) => {
+router.get('/:id/notes', async (req: express.Request, res: express.Response) => {
   try {
     const { id } = req.params
     
@@ -175,7 +183,7 @@ router.get('/:id/notes', async (req, res) => {
 })
 
 // Generate meeting notes
-router.post('/:id/generate-notes', async (req, res) => {
+router.post('/:id/generate-notes', async (req: TypedRequest<GenerateNotesBody>, res: TypedResponse) => {
   try {
     const { id } = req.params
     const { templateId } = req.body
