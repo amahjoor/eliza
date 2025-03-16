@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAuth } from './AuthProvider'
+import SearchBar from './SearchBar'
 
 const Navbar = () => {
   const pathname = usePathname()
@@ -61,6 +62,11 @@ const Navbar = () => {
                 )}
               </Link>
             ))}
+          </div>
+          
+          {/* Search Bar */}
+          <div className="hidden md:block w-64 mx-4">
+            <SearchBar />
           </div>
 
           {/* User Profile */}

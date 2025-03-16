@@ -8,6 +8,7 @@ import userRoutes from './routes/user.routes'
 import peopleRoutes from './routes/people.routes'
 import projectRoutes from './routes/project.routes'
 import authRoutes from './routes/auth.routes'
+import searchRoutes from './routes/search.routes'
 import { errorHandler, notFound } from './middleware/error.middleware'
 
 // Load environment variables
@@ -29,6 +30,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/people', peopleRoutes)
 app.use('/api/projects', projectRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/search', searchRoutes)
 
 // Error handling middleware
 app.use(notFound)
