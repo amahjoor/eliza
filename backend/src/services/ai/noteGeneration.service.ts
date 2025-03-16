@@ -40,7 +40,8 @@ export const generateMeetingNotes = async (
     }
 
     // Get user AI settings
-    const aiSettings = user.settings?.ai || {};
+    const userData = user.get ? user.get() : {};
+    const aiSettings = userData.settings?.ai || {};
     const detailLevel = aiSettings.noteDetailLevel || 3; // Default to medium detail
 
     // Get template if specified
@@ -59,7 +60,9 @@ export const generateMeetingNotes = async (
     }
 
     // Prepare transcript text
-    const transcriptText = meeting.Transcripts[0].content;
+    const meetingData = meeting.get ? meeting.get() : {};
+    const transcripts = meetingData.Transcripts || [];
+    const transcriptText = transcripts.length > 0 ? transcripts[0].content : '';
     
     // Prepare system prompt
     const systemPrompt = template.systemPrompt || 
@@ -83,7 +86,7 @@ export const generateMeetingNotes = async (
       model: "gpt-4-turbo",
       messages: [
         { role: "system", content: finalSystemPrompt },
-        { role: "user", content: `Meeting Title: ${meeting.title}\nDate: ${meeting.date}\nTranscript:\n${transcriptText}` }
+        { role: "user", content: `Meeting Title: ${meetingData.title || 'Untitled Meeting'}\nDate: ${meetingData.date || new Date().toISOString()}\nTranscript:\n${transcriptText}` }
       ],
       temperature: 0.7,
     });
@@ -246,7 +249,9 @@ export const generateCustomMeetingNotes = async (
     }
 
     // Prepare transcript text
-    const transcriptText = meeting.Transcripts[0].content;
+    const meetingData = meeting.get ? meeting.get() : {};
+    const transcripts = meetingData.Transcripts || [];
+    const transcriptText = transcripts.length > 0 ? transcripts[0].content : '';
     
     // Build custom system prompt based on options
     let systemPrompt = `You are an AI assistant that creates professional meeting notes.`;
@@ -289,7 +294,7 @@ export const generateCustomMeetingNotes = async (
       model: "gpt-4-turbo",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Meeting Title: ${meeting.title}\nDate: ${meeting.date}\nTranscript:\n${transcriptText}` }
+        { role: "user", content: `Meeting Title: ${meetingData.title || 'Untitled Meeting'}\nDate: ${meetingData.date || new Date().toISOString()}\nTranscript:\n${transcriptText}` }
       ],
       temperature: 0.7,
     });
