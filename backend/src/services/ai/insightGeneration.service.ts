@@ -1,4 +1,5 @@
 import { OpenAI } from 'openai';
+import { PersonInsight, ProjectInsight, MeetingInsight } from '../../types/ai';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -13,7 +14,7 @@ export const generatePersonInsights = async (
   personName: string,
   meetingHistory: any[],
   transcriptExcerpts: string[]
-): Promise<any> => {
+): Promise<PersonInsight> => {
   try {
     // Prepare meeting history data
     const meetingData = meetingHistory.map(meeting => ({
@@ -63,7 +64,7 @@ export const generatePersonInsights = async (
 /**
  * Parse person insights from AI-generated content
  */
-const parsePersonInsights = (content: string, personId: string, personName: string): any => {
+const parsePersonInsights = (content: string, personId: string, personName: string): PersonInsight => {
   // Extract summary
   const summaryMatch = content.match(/Summary:([\s\S]*?)(?=Network Connectivity:|Areas of Expertise:|$)/i);
   const summary = summaryMatch ? summaryMatch[1].trim() : '';
@@ -102,7 +103,7 @@ export const generateProjectInsights = async (
   projectDescription: string,
   relatedMeetings: any[],
   teamMembers: any[]
-): Promise<any> => {
+): Promise<ProjectInsight> => {
   try {
     // Prepare meeting data
     const meetingData = relatedMeetings.map(meeting => ({
@@ -160,7 +161,7 @@ export const generateProjectInsights = async (
 /**
  * Parse project insights from AI-generated content
  */
-const parseProjectInsights = (content: string, projectId: string, projectName: string): any => {
+const parseProjectInsights = (content: string, projectId: string, projectName: string): ProjectInsight => {
   // Extract status summary
   const summaryMatch = content.match(/Status Summary:([\s\S]*?)(?=Progress Score:|Key Risks:|Next Steps:|$)/i);
   const statusSummary = summaryMatch ? summaryMatch[1].trim() : '';
@@ -210,7 +211,7 @@ export const generateMeetingInsights = async (
   transcriptContent: string,
   meetingNoteContent: string,
   attendees: any[]
-): Promise<any> => {
+): Promise<MeetingInsight> => {
   try {
     // Prepare attendee data
     const attendeeData = attendees.map(attendee => ({
@@ -259,7 +260,7 @@ export const generateMeetingInsights = async (
 /**
  * Parse meeting insights from AI-generated content
  */
-const parseMeetingInsights = (content: string, meetingId: string, meetingTitle: string): any => {
+const parseMeetingInsights = (content: string, meetingId: string, meetingTitle: string): MeetingInsight => {
   // Extract assessment
   const assessmentMatch = content.match(/Assessment:([\s\S]*?)(?=Effectiveness Score:|Key Moments:|Improvements:|$)/i);
   const assessment = assessmentMatch ? assessmentMatch[1].trim() : '';

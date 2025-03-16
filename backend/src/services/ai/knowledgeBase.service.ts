@@ -1,4 +1,5 @@
 import { OpenAI } from 'openai';
+import { KnowledgeEntry, KnowledgeConnection } from '../../types/ai';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -12,8 +13,8 @@ export const generateKnowledgeEntries = async (
   meetingId: string,
   transcriptContent: string,
   meetingNoteContent: string,
-  existingKnowledgeBase: any[] = []
-): Promise<any[]> => {
+  existingKnowledgeBase: KnowledgeEntry[] = []
+): Promise<KnowledgeEntry[]> => {
   try {
     // Prepare system prompt for knowledge extraction
     const systemPrompt = `You are an AI assistant that extracts key knowledge points from meeting transcripts and notes.
@@ -61,8 +62,18 @@ export const generateKnowledgeEntries = async (
 /**
  * Parse knowledge entries from AI-generated content
  */
-const parseKnowledgeEntries = (content: string, meetingId: string): any[] => {
-  const entries = [];
+const parseKnowledgeEntries = (content: string, meetingId: string): KnowledgeEntry[] => {
+  const entries: Array<{
+    title: string;
+    type: string;
+    description: string;
+    tags: string[];
+    source: string;
+    relevance: number;
+    meetingId: string;
+    createdAt: string;
+  }> = [];
+  
   const entryRegex = /##\s+(.*?)\s*\n([\s\S]*?)(?=##|$)/g;
   
   let match;
@@ -108,7 +119,7 @@ const parseKnowledgeEntries = (content: string, meetingId: string): any[] => {
 /**
  * Merge new knowledge entries with existing ones, removing duplicates
  */
-const mergeKnowledgeEntries = (newEntries: any[], existingEntries: any[]): any[] => {
+const mergeKnowledgeEntries = (newEntries: KnowledgeEntry[], existingEntries: KnowledgeEntry[]): KnowledgeEntry[] => {
   // Create a map of existing entries by title for quick lookup
   const existingTitleMap = new Map();
   existingEntries.forEach(entry => {
@@ -135,8 +146,8 @@ const mergeKnowledgeEntries = (newEntries: any[], existingEntries: any[]): any[]
  * Generate connections between knowledge entries
  */
 export const generateKnowledgeConnections = async (
-  knowledgeEntries: any[]
-): Promise<any[]> => {
+  knowledgeEntries: KnowledgeEntry[]
+): Promise<KnowledgeConnection[]> => {
   try {
     if (knowledgeEntries.length < 2) {
       return []; // Need at least 2 entries to create connections
@@ -186,8 +197,16 @@ export const generateKnowledgeConnections = async (
 /**
  * Parse knowledge connections from AI-generated content
  */
-const parseKnowledgeConnections = (content: string): any[] => {
-  const connections = [];
+const parseKnowledgeConnections = (content: string): KnowledgeConnection[] => {
+  const connections: Array<{
+    source: string;
+    target: string;
+    strength: number;
+    type: string;
+    description: string;
+    createdAt: string;
+  }> = [];
+  
   const connectionRegex = /Connection (\d+):\s*\n([\s\S]*?)(?=Connection \d+:|$)/g;
   
   let match;
@@ -233,7 +252,7 @@ const parseKnowledgeConnections = (content: string): any[] => {
  * Generate a summary of a knowledge base
  */
 export const generateKnowledgeBaseSummary = async (
-  knowledgeEntries: any[]
+  knowledgeEntries: KnowledgeEntry[]
 ): Promise<string> => {
   try {
     if (knowledgeEntries.length === 0) {
