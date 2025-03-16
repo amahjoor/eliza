@@ -8,10 +8,10 @@ import { authenticate } from '../middleware/auth.middleware';
 const router = express.Router();
 
 // Apply authentication middleware to all routes
-router.use(authenticate);
+router.use(authenticate as express.RequestHandler);
 
 // Note generation routes
-router.post('/generate/:meetingId', generateNotesController);
-router.post('/generate-custom/:meetingId', generateCustomNotesController);
+router.post('/generate/:meetingId', generateNotesController as express.RequestHandler);
+router.post('/generate-custom/:meetingId', generateCustomNotesController as express.RequestHandler);
 
 export default router;
