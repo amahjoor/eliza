@@ -11,6 +11,10 @@ export interface NoteGenerationOptions {
   includeSummary: boolean;
   customSections?: string[];
   templateId?: string;
+  style?: 'formal' | 'casual' | 'technical';
+  focusAreas?: string[];
+  excludeTopics?: string[];
+  maxLength?: number;
 }
 
 export interface GeneratedNote {
@@ -64,6 +68,15 @@ export interface KnowledgeEntry {
   relevance: number;
   createdAt: Date;
   updatedAt: Date;
+  description?: string;
+}
+
+export interface KnowledgeConnection {
+  source: string;
+  target: string;
+  type: string;
+  strength: number;
+  description?: string;
 }
 
 export interface KnowledgeGraph {
@@ -73,13 +86,7 @@ export interface KnowledgeGraph {
     type: string;
     relevance: number;
   }>;
-  edges: Array<{
-    source: string;
-    target: string;
-    type: string;
-    strength: number;
-    description?: string;
-  }>;
+  edges: Array<KnowledgeConnection>;
 }
 
 // Insight Generation Types
@@ -109,4 +116,22 @@ export interface GeneratedInsight {
     excerpt: string;
   }>;
   createdAt: Date;
+}
+
+export interface PersonInsight {
+  personId: string;
+  personName: string;
+  insights: GeneratedInsight[];
+}
+
+export interface ProjectInsight {
+  projectId: string;
+  projectName: string;
+  insights: GeneratedInsight[];
+}
+
+export interface MeetingInsight {
+  meetingId: string;
+  meetingTitle: string;
+  insights: GeneratedInsight[];
 }
