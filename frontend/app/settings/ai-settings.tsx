@@ -8,9 +8,10 @@ export default function AISettings() {
   const [aiSettings, setAISettings] = useState({
     noteDetailLevel: 3,
     preferredModel: 'gpt-4-turbo',
-    defaultTemplateId: null
+    defaultTemplateId: null as string | null
   })
-  const [templates, setTemplates] = useState([])
+  const [templates, setTemplates] = useState<Array<{id: string, name: string}>>([])
+
   const [isSaving, setIsSaving] = useState(false)
   
   useEffect(() => {
@@ -102,7 +103,7 @@ export default function AISettings() {
           <label className="block text-sm font-medium mb-1">Default Note Template</label>
           <select
             value={aiSettings.defaultTemplateId || ''}
-            onChange={(e) => setAISettings({...aiSettings, defaultTemplateId: e.target.value || null})}
+            onChange={(e) => setAISettings({...aiSettings, defaultTemplateId: e.target.value === '' ? null : e.target.value})}
             className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg"
           >
             <option value="">System Default</option>
